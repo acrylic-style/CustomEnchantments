@@ -1,0 +1,8 @@
+name: CustomEnchantments
+main: xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
+version: "1.0"
+api-version: "1.15"
+commands:
+  customenchantments:
+    aliases: ["ce", "customenchant"]
+    permission: customenchantments.command
