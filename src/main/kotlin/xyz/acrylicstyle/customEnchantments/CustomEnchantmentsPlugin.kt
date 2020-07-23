@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.inventory.PrepareAnvilEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.inventory.AnvilInventory
@@ -87,8 +88,9 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     @Suppress("SENSELESS_COMPARISON") // nice wrong detection
     @EventHandler
     fun onInventoryClick(e: InventoryClickEvent) {
-        if (e.inventory !is AnvilInventory) return
+        if (e.inventory !is AnvilInventory || e.clickedInventory !is AnvilInventory) return
         val anvil = e.inventory as AnvilInventory
+        if (e.slotType != InventoryType.SlotType.RESULT) return
         if (manager.hasEnchantments(anvil.secondItem)) {
             anvil.result?.let {
                 e.isCancelled = true
