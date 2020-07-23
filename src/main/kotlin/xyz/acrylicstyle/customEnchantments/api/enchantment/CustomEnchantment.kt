@@ -21,6 +21,8 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
         }
     }
 
+    open fun getMaximumAnvilAbleLevel(): Int = maxLevel + 1
+
     abstract fun getDescription(): List<String>
     abstract override fun getName(): String // un-deprecate
     abstract override fun isCursed(): Boolean // un-deprecate

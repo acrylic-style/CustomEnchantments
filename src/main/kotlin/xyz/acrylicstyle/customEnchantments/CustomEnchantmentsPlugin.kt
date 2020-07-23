@@ -2,6 +2,7 @@ package xyz.acrylicstyle.customEnchantments
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent
 import org.bukkit.Bukkit
+import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.Sound
 import org.bukkit.enchantments.EnchantmentTarget
@@ -13,6 +14,8 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.inventory.PrepareAnvilEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.AnvilInventory
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.plugin.java.JavaPlugin
@@ -80,9 +83,22 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     }
 
     override fun onDisable() {
+        Bukkit.getOnlinePlayers().forEach { player ->
+            CustomEnchantment.deactivateAllActiveEffects(player)
+        }
         recipes.forEach { key ->
             Bukkit.removeRecipe(key)
         }
+    }
+
+    @EventHandler
+    fun onPlayerJoin(e: PlayerJoinEvent) {
+        CustomEnchantment.deactivateAllActiveEffects(e.player)
+    }
+
+    @EventHandler
+    fun onPlayerQuit(e: PlayerQuitEvent) {
+        CustomEnchantment.deactivateAllActiveEffects(e.player)
     }
 
     @Suppress("SENSELESS_COMPARISON") // nice wrong detection
@@ -112,15 +128,18 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     fun onPrepareAnvil(e: PrepareAnvilEvent) {
         val first = e.inventory.firstItem
         val second = e.inventory.secondItem
+        val eBook = first != null && first.type == Material.ENCHANTED_BOOK
         if (manager.hasEnchantments(first)) {
             if (manager.hasEnchantments(second)) { // first = true, second = true
                 var result = first!!.clone()
                 manager.getEnchantments(second).forEach { enchantment ->
+                    if (!enchantment.canEnchantItem(result)) return@forEach
                     val level1 = manager.getEnchantmentLevel(first, enchantment)
                     val level2 = manager.getEnchantmentLevel(second, enchantment)
                     if (level1 != level2 && level1 > level2) return@forEach
                     result = manager.removeEnchantment(result, enchantment)
-                    result = manager.applyEnchantment(result, enchantment, (level2 + 1).coerceAtMost(enchantment.maxLevel))
+                    val level = if (level2 >= enchantment.getMaximumAnvilAbleLevel() && !eBook) level2 else (level2 + 1).coerceAtMost(enchantment.maxLevel)
+                    result = manager.applyEnchantment(result, enchantment, level)
                 }
                 e.inventory.result = result
                 e.result = result
@@ -131,6 +150,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             if (first != null && manager.hasEnchantments(second)) { // first = false, second = true
                 var result = first.clone()
                 manager.getEnchantments(second).forEach { enchantment ->
+                    if (!enchantment.canEnchantItem(result)) return@forEach
                     val level = manager.getEnchantmentLevel(second, enchantment)
                     result = manager.applyEnchantment(result, enchantment, level)
                 }

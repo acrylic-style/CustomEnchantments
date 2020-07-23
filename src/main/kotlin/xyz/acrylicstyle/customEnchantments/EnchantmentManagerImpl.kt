@@ -38,7 +38,7 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         meta.lore = lore
         if (!meta.hasEnchants()) {
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-            meta.addEnchant(Enchantment.DAMAGE_ARTHROPODS, -2, true)
+            meta.addEnchant(Enchantment.DAMAGE_ARTHROPODS, 1, true)
         }
         item.itemMeta = meta
         val itemStack = Paper.itemStack(item)
@@ -83,6 +83,7 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         val meta2 = i.itemMeta
         if (storedEnchantments.isEmpty()) {
             meta2.removeItemFlags(ItemFlag.HIDE_ENCHANTS)
+            if (meta2.getEnchantLevel(Enchantment.DAMAGE_ARTHROPODS) == 1) meta2.removeEnchant(Enchantment.DAMAGE_ARTHROPODS)
             if (meta2.getEnchantLevel(Enchantment.DAMAGE_ARTHROPODS) == 65534) meta2.removeEnchant(Enchantment.DAMAGE_ARTHROPODS)
         }
         i.itemMeta = meta2
