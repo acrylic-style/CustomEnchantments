@@ -89,6 +89,15 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         return i
     }
 
+    override fun removeEnchantments(item: ItemStack): ItemStack {
+        val i = Paper.itemStack(item)
+        val tag = i.orCreateTag
+        tag.remove("storedEnchantments")
+        i.tag = tag
+        return i.itemStack
+    }
+
+
     override fun hasEnchantment(item: ItemStack, enchantment: CustomEnchantment): Boolean {
         val itemStack = Paper.itemStack(item)
         val tag = itemStack.orCreateTag
@@ -137,4 +146,6 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         val e = (existingEnchantment as NBTTagCompound)
         return e.getInt("lvl")
     }
+
+    override fun hasEnchantments(item: ItemStack?): Boolean = getEnchantments(item).isNotEmpty()
 }

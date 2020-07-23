@@ -1,9 +1,12 @@
 package xyz.acrylicstyle.customEnchantments.api.enchantment
 
+import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import util.CollectionList
+import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
 import xyz.acrylicstyle.tomeito_api.gui.PerPlayerInventory
 
 abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
@@ -32,5 +35,17 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
     fun deactivate(player: Player, level: Int) {
         activeEffects.get(player.uniqueId).remove(Pair(this, level))
         onDeactivate(player, level)
+    }
+
+    /**
+     * Get the enchantment book item.
+     * @throws IllegalStateException when CustomEnchantments plugin isn't loaded
+     */
+    fun getEnchantmentBook(level: Int): ItemStack {
+        val item = ItemStack(Material.ENCHANTED_BOOK)
+        return CustomEnchantments.getInstance()
+                .orElseThrow { IllegalStateException("CustomEnchantments plugin needs to be loaded to use this feature") }
+                .getManager()
+                .applyEnchantment(item, this, level)
     }
 }

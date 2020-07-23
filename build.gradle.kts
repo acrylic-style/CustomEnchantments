@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    compileOnly("xyz.acrylicstyle.grid:grid-api:1.16.1-R0.1-SNAPSHOT")
+    compileOnly("xyz.acrylicstyle.grid:grid:1.16.1-R0.1-SNAPSHOT")
     compileOnly("xyz.acrylicstyle:api:0.5.14a")
 }
 
