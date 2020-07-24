@@ -21,7 +21,7 @@ class GrowthEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.i
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR
 
-    override fun getName(): String = "Growth"
+    override fun getName(): String = "体力上昇"
 
     override fun isCursed(): Boolean = false
 

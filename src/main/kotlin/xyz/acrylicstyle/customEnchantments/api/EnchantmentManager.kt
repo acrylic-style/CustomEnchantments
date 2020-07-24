@@ -16,4 +16,5 @@ interface EnchantmentManager {
     fun getEnchantments(item: ItemStack?): CollectionList<CustomEnchantment>
     fun getEnchantmentLevel(item: ItemStack?, enchantment: CustomEnchantment): Int
     fun hasEnchantments(item: ItemStack?): Boolean
+    fun getEnchantment(clazz: Class<out CustomEnchantment>): CustomEnchantment?
 }

@@ -20,7 +20,7 @@ class JumpEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.ins
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR_FEET
 
-    override fun getName(): String = "Jump"
+    override fun getName(): String = "跳躍力上昇"
 
     override fun isCursed(): Boolean = false
 

@@ -26,8 +26,8 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
     abstract fun getDescription(): List<String>
     abstract override fun getName(): String // un-deprecate
     abstract override fun isCursed(): Boolean // un-deprecate
-    protected abstract fun onActivate(player: Player, level: Int)
-    protected abstract fun onDeactivate(player: Player, level: Int)
+    protected open fun onActivate(player: Player, level: Int) {}
+    protected open fun onDeactivate(player: Player, level: Int) {}
 
     fun activate(player: Player, level: Int) {
         activeEffects.get(player.uniqueId).add(Pair(this, level))

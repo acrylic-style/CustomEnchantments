@@ -18,7 +18,7 @@ class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.in
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR_FEET
 
-    override fun getName(): String = "Speed"
+    override fun getName(): String = "迅速" // todo: localization?
 
     override fun isCursed(): Boolean = false
 

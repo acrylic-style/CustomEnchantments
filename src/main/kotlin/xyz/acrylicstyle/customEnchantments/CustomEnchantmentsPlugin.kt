@@ -9,6 +9,7 @@ import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
@@ -28,6 +29,7 @@ import xyz.acrylicstyle.customEnchantments.commands.CETabCompleter
 import xyz.acrylicstyle.customEnchantments.enchantments.*
 import xyz.acrylicstyle.tomeito_api.TomeitoAPI
 import xyz.acrylicstyle.tomeito_api.utils.Log
+import java.util.UUID
 
 class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     companion object {
@@ -45,6 +47,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     override fun onEnable() {
         CustomEnchantmentsPlugin.config = CustomEnchantmentConfig()
         Log.info("Registering enchantments")
+        manager.registerEnchantment(MukiEnchant())
         manager.registerEnchantment(SpeedEnchant())
         manager.registerEnchantment(RegenerationEnchant())
         manager.registerEnchantment(AntiHungryEnchant())
@@ -101,7 +104,6 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         CustomEnchantment.deactivateAllActiveEffects(e.player)
     }
 
-    @Suppress("SENSELESS_COMPARISON") // nice wrong detection
     @EventHandler
     fun onInventoryClick(e: InventoryClickEvent) {
         if (e.inventory !is AnvilInventory || e.clickedInventory !is AnvilInventory) return
@@ -176,6 +178,19 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         manager.getEnchantments(e.oldItem).forEach { enchantment ->
             if (enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.itemTarget == EnchantmentTarget.WEARABLE)
                 enchantment.deactivate(e.player, manager.getEnchantmentLevel(e.oldItem, enchantment))
+        }
+    }
+
+    @EventHandler
+    fun onEntityDamageByEntity(e: EntityDamageByEntityEvent) {
+        if (e.entity is Player && e.damager is Player) {
+            val player = e.entity as Player
+            val damager = e.damager as Player
+            if (player.uniqueId == UUID.fromString("7ffad749-e54d-4a13-908d-ed8807eb6d25")) {
+                if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(MukiEnchant::class.java)!!)) {
+                    e.damage = e.damage * 10
+                }
+            }
         }
     }
 

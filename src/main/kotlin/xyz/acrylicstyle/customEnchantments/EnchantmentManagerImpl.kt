@@ -4,6 +4,7 @@ import org.bukkit.ChatColor
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
+import util.Collection
 import util.CollectionList
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
@@ -14,9 +15,11 @@ import xyz.acrylicstyle.paper.nbt.NBTTagList
 
 open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : EnchantmentManager {
     private val enchantments = CollectionList<CustomEnchantment>()
+    private val enchantmentsMap = Collection<Class<out CustomEnchantment>, CustomEnchantment>()
 
     override fun registerEnchantment(enchantment: CustomEnchantment) {
         if (enchantments.filter { enchant -> enchant.key == enchantment.key }.isNotEmpty()) throw IllegalArgumentException("Duplicate enchantment key: " + enchantment.key.toString())
+        enchantmentsMap.add(enchantment.javaClass, enchantment)
         enchantments.add(enchantment)
     }
 
@@ -98,7 +101,6 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         return i.itemStack
     }
 
-
     override fun hasEnchantment(item: ItemStack, enchantment: CustomEnchantment): Boolean {
         val itemStack = Paper.itemStack(item)
         val tag = itemStack.orCreateTag
@@ -149,4 +151,6 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
     }
 
     override fun hasEnchantments(item: ItemStack?): Boolean = getEnchantments(item).isNotEmpty()
+
+    override fun getEnchantment(clazz: Class<out CustomEnchantment>): CustomEnchantment? = enchantmentsMap.get(clazz)
 }

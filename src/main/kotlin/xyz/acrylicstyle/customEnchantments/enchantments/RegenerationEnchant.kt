@@ -21,7 +21,7 @@ class RegenerationEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPl
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR
 
-    override fun getName(): String = "Regeneration"
+    override fun getName(): String = "再生"
 
     override fun isCursed(): Boolean = false
 

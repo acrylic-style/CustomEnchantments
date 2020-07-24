@@ -21,7 +21,7 @@ class AntiHungryEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlug
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR
 
-    override fun getName(): String = "Anti-Hungry"
+    override fun getName(): String = "満腹度回復"
 
     override fun isCursed(): Boolean = false
 
