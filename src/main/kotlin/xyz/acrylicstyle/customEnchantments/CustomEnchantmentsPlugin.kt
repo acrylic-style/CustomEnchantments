@@ -135,7 +135,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             if (manager.hasEnchantments(second)) { // first = true, second = true
                 var result = first!!.clone()
                 manager.getEnchantments(second).forEach { enchantment ->
-                    if (!enchantment.canEnchantItem(result)) return@forEach
+                    if (!eBook && !enchantment.canEnchantItem(result)) return@forEach
                     val level1 = manager.getEnchantmentLevel(first, enchantment)
                     val level2 = manager.getEnchantmentLevel(second, enchantment)
                     if (level1 != level2 && level1 > level2) return@forEach
