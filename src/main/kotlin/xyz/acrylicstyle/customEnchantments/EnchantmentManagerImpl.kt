@@ -14,6 +14,7 @@ import util.CollectionList
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 import xyz.acrylicstyle.customEnchantments.api.enchantment.EnchantmentLevel
+import java.util.concurrent.atomic.AtomicReference
 
 open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : EnchantmentManager {
     private val enchantments = CollectionList<CustomEnchantment>()
@@ -89,11 +90,9 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
     }
 
     override fun removeEnchantments(item: ItemStack): ItemStack {
-        val i = CraftItemStack.asNMSCopy(item)
-        val tag = if (i.hasTag()) i.tag else NBTTagCompound()
-        tag.remove("storedEnchantments")
-        i.tag = tag
-        return CraftItemStack.asBukkitCopy(i)
+        val i = AtomicReference(item)
+        getEnchantments(item).forEach { ench -> i.set(removeEnchantment(i.get(), ench)) }
+        return i.get()
     }
 
     override fun hasEnchantment(item: ItemStack, enchantment: CustomEnchantment): Boolean {
