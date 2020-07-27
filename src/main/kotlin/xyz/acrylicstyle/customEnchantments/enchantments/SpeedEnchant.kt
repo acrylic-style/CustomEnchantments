@@ -1,15 +1,13 @@
 package xyz.acrylicstyle.customEnchantments.enchantments
 
 import org.bukkit.ChatColor
-import org.bukkit.NamespacedKey
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
-class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "speed")) {
+class SpeedEnchant : CustomEnchantment("speed") {
     override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases speed.")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
@@ -20,8 +18,6 @@ class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.in
 
     override fun getName(): String = "迅速" // todo: localization?
 
-    override fun isCursed(): Boolean = false
-
     override fun onActivate(player: Player, level: Int) {
         player.walkSpeed = player.walkSpeed + level * 0.02F
     }
@@ -29,8 +25,6 @@ class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.in
     override fun onDeactivate(player: Player, level: Int) {
         player.walkSpeed = (player.walkSpeed - level * 0.02F).coerceAtLeast(0.2F)
     }
-
-    override fun isTreasure(): Boolean = false
 
     override fun getMaxLevel(): Int = 5
 

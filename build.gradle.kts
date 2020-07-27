@@ -16,8 +16,9 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    compileOnly("xyz.acrylicstyle.grid:grid:1.16.1-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT")
     compileOnly("xyz.acrylicstyle:api:0.5.14a")
+    compileOnly(fileTree(mapOf("dir" to "libs", "include" to arrayOf("spigot*.jar"))))
 }
 
 tasks {

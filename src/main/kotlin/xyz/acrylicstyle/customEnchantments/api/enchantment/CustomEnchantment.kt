@@ -1,7 +1,6 @@
 package xyz.acrylicstyle.customEnchantments.api.enchantment
 
 import org.bukkit.Material
-import org.bukkit.NamespacedKey
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -9,7 +8,7 @@ import util.CollectionList
 import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
 import xyz.acrylicstyle.tomeito_api.gui.PerPlayerInventory
 
-abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
+abstract class CustomEnchantment(val id: String) : Enchantment(-1) {
     companion object {
         val activeEffects = PerPlayerInventory<CollectionList<Pair<CustomEnchantment, Int>>> { _ -> CollectionList() }
 
@@ -25,7 +24,6 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
 
     abstract fun getDescription(): List<String>
     abstract override fun getName(): String // un-deprecate
-    abstract override fun isCursed(): Boolean // un-deprecate
     protected open fun onActivate(player: Player, level: Int) {}
     protected open fun onDeactivate(player: Player, level: Int) {}
 

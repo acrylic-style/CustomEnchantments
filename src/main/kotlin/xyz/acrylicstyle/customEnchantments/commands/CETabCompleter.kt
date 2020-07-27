@@ -25,7 +25,7 @@ class CETabCompleter : TabCompleter {
                         .instance
                         .getManager()
                         .getEnchantments()
-                        .map { enchantment -> enchantment.key.toString() },
+                        .map { enchantment -> enchantment.id },
                     args[1]
                 )
             }

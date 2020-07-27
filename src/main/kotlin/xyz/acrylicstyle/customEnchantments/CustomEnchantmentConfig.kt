@@ -1,9 +1,9 @@
 package xyz.acrylicstyle.customEnchantments
 
 import org.bukkit.Material
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.inventory.ItemStack
 import xyz.acrylicstyle.customEnchantments.nms.MojangsonParser
-import xyz.acrylicstyle.paper.Paper
 import xyz.acrylicstyle.tomeito_api.providers.ConfigProvider
 
 class CustomEnchantmentConfig : ConfigProvider("./plugins/CustomEnchantments/config.yml") {
@@ -20,6 +20,6 @@ class CustomEnchantmentConfig : ConfigProvider("./plugins/CustomEnchantments/con
         if (item == null) return this.set(path, null)
         this.set("${path}.material", item.type)
         this.set("${path}.amount", item.amount)
-        this.set("${path}.data", Paper.itemStack(item).tag?.toString())
+        this.set("${path}.data", CraftItemStack.asNMSCopy(item).tag?.toString())
     }
 }

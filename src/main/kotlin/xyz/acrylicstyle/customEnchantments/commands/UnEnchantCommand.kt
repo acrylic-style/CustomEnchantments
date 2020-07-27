@@ -1,6 +1,7 @@
 package xyz.acrylicstyle.customEnchantments.commands
 
 import org.bukkit.ChatColor
+import org.bukkit.Material
 import org.bukkit.entity.Player
 import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.tomeito_api.subcommand.PlayerSubCommandExecutor
@@ -18,16 +19,16 @@ class UnEnchantCommand : PlayerSubCommandExecutor() {
             player.sendMessage(ChatColor.RED.toString() + "Cannot find enchantment by " + args[0])
             return
         }
-        val item = player.inventory.itemInMainHand
+        val item = player.inventory.itemInHand
         if (!CustomEnchantmentsPlugin.instance.getManager().hasEnchantment(item, enchantment)) {
             player.sendMessage(ChatColor.RED.toString() + "Enchantment " + enchantment.name + " is not enchanted on this item")
             return
         }
-        if (item.type.isAir) {
+        if (item.type == Material.AIR) {
             player.sendMessage(ChatColor.RED.toString() + "Cannot remove the enchantment from the air")
             return
         }
-        player.inventory.setItemInMainHand(CustomEnchantmentsPlugin.instance.getManager().removeEnchantment(item, enchantment))
+        player.inventory.itemInHand = CustomEnchantmentsPlugin.instance.getManager().removeEnchantment(item, enchantment)
         player.sendMessage(ChatColor.GREEN.toString() + "Removed the enchantment successfully.")
     }
 }

@@ -1,17 +1,14 @@
 package xyz.acrylicstyle.customEnchantments.enchantments
 
 import org.bukkit.ChatColor
-import org.bukkit.NamespacedKey
-import org.bukkit.attribute.Attribute
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 import kotlin.math.max
 
-class GrowthEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "growth")) {
+class GrowthEnchant : CustomEnchantment("growth") {
     override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases health by 5 * enchantment level.")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
@@ -23,17 +20,13 @@ class GrowthEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.i
 
     override fun getName(): String = "体力上昇"
 
-    override fun isCursed(): Boolean = false
-
     override fun onActivate(player: Player, level: Int) {
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH)?.let { it.baseValue = it.baseValue + level }
+        player.maxHealth = player.maxHealth + level
     }
 
     override fun onDeactivate(player: Player, level: Int) {
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH)?.let { it.baseValue = max(it.baseValue - level, 20.0) }
+        player.maxHealth = max(player.maxHealth - level, 20.0)
     }
-
-    override fun isTreasure(): Boolean = false
 
     override fun getMaxLevel(): Int = 5
 

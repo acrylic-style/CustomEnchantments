@@ -1,27 +1,18 @@
 package xyz.acrylicstyle.customEnchantments.nms
 
+import net.minecraft.server.v1_8_R3.MojangsonParser
+import net.minecraft.server.v1_8_R3.NBTTagCompound
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.inventory.ItemStack
-import util.ReflectionHelper
-import xyz.acrylicstyle.paper.Paper
-import xyz.acrylicstyle.paper.nbt.CraftNBT
-import xyz.acrylicstyle.paper.nbt.NBTTagCompound
-import xyz.acrylicstyle.shared.NMSAPI
-import xyz.acrylicstyle.tomeito_api.utils.ReflectionUtil
 
-class MojangsonParser : NMSAPI(null, "MojangsonParser") {
+class MojangsonParser {
     companion object {
-        private val CLASS: Class<*> = getClassWithoutException("MojangsonParser")
-        fun parse(json: String): NBTTagCompound {
-            return CraftNBT::class.java
-                .getMethod("asBukkitCompound", ReflectionUtil.getNMSClass("NBTTagCompound"))
-                .invoke(null, ReflectionHelper.invokeMethodWithoutException(CLASS, null, "parse", json)) as NBTTagCompound
-        }
+        private fun parse(json: String): NBTTagCompound = MojangsonParser.parse(json)
 
         fun combine(itemStack: ItemStack, json: String): ItemStack {
-            val util = Paper.itemStack(itemStack)
+            val util = CraftItemStack.asNMSCopy(itemStack)
             util.tag = parse(json)
-            //Log.debug("Parsed NBT: " + Objects.requireNonNull(util.getTag()).toString());
-            return util.itemStack
+            return CraftItemStack.asBukkitCopy(util)
         }
     }
 }

@@ -1,6 +1,7 @@
 package xyz.acrylicstyle.customEnchantments.commands
 
 import org.bukkit.ChatColor
+import org.bukkit.Material
 import org.bukkit.entity.Player
 import util.ArgumentParser
 import util.ICollectionList
@@ -19,7 +20,7 @@ class EnchantCommand : PlayerSubCommandExecutor() {
         val args = ArgumentParser(ICollectionList.asList(args_).join(" ")).getArguments()
         val force = args.contains("force")
         if (force) args.remove("force")
-        val item = player.inventory.itemInMainHand
+        val item = player.inventory.itemInHand
         val enchantment = CustomEnchantmentsPlugin.instance.getManager().getById(args[0])
         if (enchantment == null) {
             player.sendMessage(ChatColor.RED.toString() + "Cannot find enchantment by " + args[0])
@@ -42,7 +43,7 @@ class EnchantCommand : PlayerSubCommandExecutor() {
             player.sendMessage(ChatColor.RED.toString() + "Cannot apply the enchantment with level lower than minimum level specified by enchantment. Use --force to apply enchantment forcefully.")
             return
         }
-        if (item.type.isAir) {
+        if (item.type == Material.AIR) {
             player.sendMessage(ChatColor.RED.toString() + "Cannot apply the enchantment to the air")
             return
         }
@@ -50,7 +51,7 @@ class EnchantCommand : PlayerSubCommandExecutor() {
             player.sendMessage(ChatColor.RED.toString() + "Cannot apply the enchantment to this item. Use --force to bypass check.")
             return
         }
-        player.inventory.setItemInMainHand(CustomEnchantmentsPlugin.instance.getManager().applyEnchantment(item, enchantment, level))
+        player.inventory.itemInHand = CustomEnchantmentsPlugin.instance.getManager().applyEnchantment(item, enchantment, level)
         player.sendMessage(ChatColor.GREEN.toString() + "Applied the enchantment successfully.")
     }
 }

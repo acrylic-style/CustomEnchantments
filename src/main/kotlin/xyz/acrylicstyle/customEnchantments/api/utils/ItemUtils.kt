@@ -8,9 +8,6 @@ object ItemUtils {
         if (material.name.endsWith("CHESTPLATE")) return true
         if (material.name.endsWith("LEGGINGS")) return true
         if (material.name.endsWith("BOOTS")) return true
-        return when (material) {
-            Material.ELYTRA -> true
-            else -> false
-        }
+        return false
     }
 }

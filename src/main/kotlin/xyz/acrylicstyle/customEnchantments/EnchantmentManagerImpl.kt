@@ -1,6 +1,11 @@
 package xyz.acrylicstyle.customEnchantments
 
+import net.minecraft.server.v1_8_R3.NBTBase
+import net.minecraft.server.v1_8_R3.NBTTagCompound
+import net.minecraft.server.v1_8_R3.NBTTagList
 import org.bukkit.ChatColor
+import org.bukkit.Material
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
@@ -9,30 +14,20 @@ import util.CollectionList
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 import xyz.acrylicstyle.customEnchantments.api.enchantment.EnchantmentLevel
-import xyz.acrylicstyle.paper.Paper
-import xyz.acrylicstyle.paper.nbt.NBTTagCompound
-import xyz.acrylicstyle.paper.nbt.NBTTagList
 
 open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : EnchantmentManager {
     private val enchantments = CollectionList<CustomEnchantment>()
     private val enchantmentsMap = Collection<Class<out CustomEnchantment>, CustomEnchantment>()
 
     override fun registerEnchantment(enchantment: CustomEnchantment) {
-        if (enchantments.filter { enchant -> enchant.key == enchantment.key }.isNotEmpty()) throw IllegalArgumentException("Duplicate enchantment key: " + enchantment.key.toString())
+        if (enchantments.filter { enchant -> enchant.id == enchantment.id }.isNotEmpty()) throw IllegalArgumentException("Duplicate enchantment key: " + enchantment.id)
         enchantmentsMap.add(enchantment.javaClass, enchantment)
         enchantments.add(enchantment)
     }
 
     override fun getEnchantments(): CollectionList<CustomEnchantment> = enchantments
 
-    override fun getById(id: String): CustomEnchantment? {
-        val pluginId = if (id.contains(":")) id.replace("(.*):.*".toRegex(), "$1") else null
-        val name = id.replace(".*:(.*)".toRegex(), "$1")
-        return enchantments.filter { enchantment ->
-            val key = enchantment.key.toString()
-            if (pluginId == null) enchantment.key.key == name else key == "$pluginId:$name"
-        }.first()
-    }
+    override fun getById(id: String): CustomEnchantment? = enchantments.filter { enchantment -> enchantment.id == id }.first()
 
     override fun applyEnchantment(item: ItemStack, enchantment: CustomEnchantment, level: Int): ItemStack {
         val meta = item.itemMeta
@@ -44,21 +39,24 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
             meta.addEnchant(Enchantment.DAMAGE_ARTHROPODS, 1, true)
         }
         item.itemMeta = meta
-        val itemStack = Paper.itemStack(item)
-        val tag = itemStack.orCreateTag
+        val itemStack = CraftItemStack.asNMSCopy(item)
+        val tag = if (itemStack.hasTag()) itemStack.tag else NBTTagCompound()
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
-        val existingEnchantment = storedEnchantments.find { nbt ->
-            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.key.key
-                    && (!nbt.getString("id").contains(":") || nbt.getString("id").replace("(.*):.*".toRegex(), "$1") == enchantment.key.namespace)
-        }
-        if (existingEnchantment != null) storedEnchantments.remove(existingEnchantment)
+        val existingEnchantment = getStoredEnchantments(storedEnchantments).find { nbt -> (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.id }
+        if (existingEnchantment != null) getStoredEnchantments(storedEnchantments).remove(existingEnchantment)
         val enchantmentTag = NBTTagCompound()
-        enchantmentTag.setString("id", enchantment.key.toString())
+        enchantmentTag.setString("id", enchantment.id)
         enchantmentTag.setInt("lvl", level)
         storedEnchantments.add(enchantmentTag)
         tag.set("storedEnchantments", storedEnchantments)
         itemStack.tag = tag
-        return itemStack.itemStack
+        return CraftItemStack.asBukkitCopy(itemStack)
+    }
+
+    private fun getStoredEnchantments(storedEnchantments: NBTTagList): MutableList<NBTBase> {
+        val f = NBTTagList::class.java.getDeclaredField("list")
+        f.isAccessible = true
+        @Suppress("UNCHECKED_CAST") return f.get(storedEnchantments) as MutableList<NBTBase>
     }
 
     override fun removeEnchantment(item: ItemStack, enchantment: CustomEnchantment): ItemStack {
@@ -68,23 +66,20 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         if (s != null) lore.remove(s)
         meta.lore = if (lore.isEmpty()) null else lore
         item.itemMeta = meta
-        val itemStack = Paper.itemStack(item)
-        val tag = itemStack.orCreateTag
+        val itemStack = CraftItemStack.asNMSCopy(item)
+        val tag = if (itemStack.hasTag()) itemStack.tag else NBTTagCompound()
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
-        val existingEnchantment = storedEnchantments.find { nbt ->
-            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.key.key
-                    && (!nbt.getString("id").contains(":") || nbt.getString("id").replace("(.*):.*".toRegex(), "$1") == enchantment.key.namespace)
-        }
-        if (existingEnchantment != null) storedEnchantments.remove(existingEnchantment)
-        if (storedEnchantments.isEmpty()) {
+        val existingEnchantment = getStoredEnchantments(storedEnchantments).find { nbt -> (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.id }
+        if (existingEnchantment != null) getStoredEnchantments(storedEnchantments).remove(existingEnchantment)
+        if (storedEnchantments.isEmpty) {
             tag.remove("storedEnchantments")
         } else {
             tag.set("storedEnchantments", storedEnchantments)
         }
         itemStack.tag = tag
-        val i = itemStack.itemStack
+        val i = CraftItemStack.asBukkitCopy(itemStack)
         val meta2 = i.itemMeta
-        if (storedEnchantments.isEmpty()) {
+        if (meta2.enchants.size > 1 || storedEnchantments.isEmpty) {
             meta2.removeItemFlags(ItemFlag.HIDE_ENCHANTS)
             if (meta2.getEnchantLevel(Enchantment.DAMAGE_ARTHROPODS) == 1) meta2.removeEnchant(Enchantment.DAMAGE_ARTHROPODS)
             if (meta2.getEnchantLevel(Enchantment.DAMAGE_ARTHROPODS) == 65534) meta2.removeEnchant(Enchantment.DAMAGE_ARTHROPODS)
@@ -94,31 +89,31 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
     }
 
     override fun removeEnchantments(item: ItemStack): ItemStack {
-        val i = Paper.itemStack(item)
-        val tag = i.orCreateTag
+        val i = CraftItemStack.asNMSCopy(item)
+        val tag = if (i.hasTag()) i.tag else NBTTagCompound()
         tag.remove("storedEnchantments")
         i.tag = tag
-        return i.itemStack
+        return CraftItemStack.asBukkitCopy(i)
     }
 
     override fun hasEnchantment(item: ItemStack, enchantment: CustomEnchantment): Boolean {
-        val itemStack = Paper.itemStack(item)
-        val tag = itemStack.orCreateTag
+        val itemStack = CraftItemStack.asNMSCopy(item)
+        val tag = if (itemStack.hasTag()) itemStack.tag else NBTTagCompound()
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
-        val existingEnchantment = storedEnchantments.find { nbt ->
-            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.key.key
-                    && (!nbt.getString("id").contains(":") || nbt.getString("id").replace("(.*):.*".toRegex(), "$1") == enchantment.key.namespace)
+        val existingEnchantment = getStoredEnchantments(storedEnchantments).find { nbt ->
+            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.id
+                    && (!nbt.getString("id").contains(":") || nbt.getString("id").replace("(.*):.*".toRegex(), "$1") == enchantment.id)
         }
         return existingEnchantment != null
     }
 
     override fun getEnchantments(item: ItemStack?): CollectionList<CustomEnchantment> {
-        if (item == null) return CollectionList()
-        val itemStack = Paper.itemStack(item)
-        val tag = itemStack.orCreateTag
+        if (item == null || item.type == Material.AIR) return CollectionList()
+        val itemStack = CraftItemStack.asNMSCopy(item)
+        val tag = if (itemStack.hasTag()) itemStack.tag else NBTTagCompound()
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
         val enchantments = CollectionList<CustomEnchantment>()
-        storedEnchantments.forEach { nbt ->
+        getStoredEnchantments(storedEnchantments).forEach { nbt ->
             val t = nbt as NBTTagCompound
             enchantments.add(getById(t.getString("id")))
         }
@@ -126,12 +121,11 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
     }
 
     override fun hasEnchantmentOfLevel(item: ItemStack, enchantment: CustomEnchantment, level: Int): Boolean {
-        val itemStack = Paper.itemStack(item)
-        val tag = itemStack.orCreateTag
+        val itemStack = CraftItemStack.asNMSCopy(item)
+        val tag = if (itemStack.hasTag()) itemStack.tag else NBTTagCompound()
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
-        val existingEnchantment = storedEnchantments.find { nbt ->
-            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.key.key
-                    && (!nbt.getString("id").contains(":") || nbt.getString("id").replace("(.*):.*".toRegex(), "$1") == enchantment.key.namespace)
+        val existingEnchantment = getStoredEnchantments(storedEnchantments).find { nbt ->
+            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.id
         } ?: return false
         val e = (existingEnchantment as NBTTagCompound)
         return e.getInt("lvl") == level
@@ -139,12 +133,11 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
 
     override fun getEnchantmentLevel(item: ItemStack?, enchantment: CustomEnchantment): Int {
         if (item == null) return 0
-        val itemStack = Paper.itemStack(item)
-        val tag = itemStack.orCreateTag
+        val itemStack = CraftItemStack.asNMSCopy(item)
+        val tag = if (itemStack.hasTag()) itemStack.tag else NBTTagCompound()
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
-        val existingEnchantment = storedEnchantments.find { nbt ->
-            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.key.key
-                    && (!nbt.getString("id").contains(":") || nbt.getString("id").replace("(.*):.*".toRegex(), "$1") == enchantment.key.namespace)
+        val existingEnchantment = getStoredEnchantments(storedEnchantments).find { nbt ->
+            (nbt as NBTTagCompound).getString("id").replace(".*:(.*)".toRegex(), "$1") == enchantment.id
         } ?: return 0
         val e = (existingEnchantment as NBTTagCompound)
         return e.getInt("lvl")
@@ -152,5 +145,5 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
 
     override fun hasEnchantments(item: ItemStack?): Boolean = getEnchantments(item).isNotEmpty()
 
-    override fun getEnchantment(clazz: Class<out CustomEnchantment>): CustomEnchantment? = enchantmentsMap.get(clazz)
+    override fun getEnchantment(clazz: Class<out CustomEnchantment>): CustomEnchantment? = enchantmentsMap[clazz]
 }
