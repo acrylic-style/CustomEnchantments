@@ -26,11 +26,11 @@ class GrowthEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.i
     override fun isCursed(): Boolean = false
 
     override fun onActivate(player: Player, level: Int) {
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH)?.let { it.baseValue = it.baseValue + 5 * level }
+        player.getAttribute(Attribute.GENERIC_MAX_HEALTH)?.let { it.baseValue = it.baseValue + level }
     }
 
     override fun onDeactivate(player: Player, level: Int) {
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH)?.let { it.baseValue = max(it.baseValue - 5 * level, 20.0) }
+        player.getAttribute(Attribute.GENERIC_MAX_HEALTH)?.let { it.baseValue = max(it.baseValue - level, 20.0) }
     }
 
     override fun isTreasure(): Boolean = false

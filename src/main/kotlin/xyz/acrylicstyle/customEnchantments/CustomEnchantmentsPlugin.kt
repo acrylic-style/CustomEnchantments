@@ -138,7 +138,11 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                     if (!eBook && !enchantment.canEnchantItem(result)) return@forEach
                     val level1 = manager.getEnchantmentLevel(first, enchantment)
                     val level2 = manager.getEnchantmentLevel(second, enchantment)
-                    if (level1 != level2 && level1 > level2) return@forEach
+                    if (level1 != level2) {
+                        result = manager.removeEnchantment(result, enchantment)
+                        result = manager.applyEnchantment(result, enchantment, level1.coerceAtLeast(level2))
+                        return@forEach
+                    }
                     result = manager.removeEnchantment(result, enchantment)
                     val level = if (level2 >= enchantment.getMaximumAnvilAbleLevel() && !eBook) level2 else (level2 + 1).coerceAtMost(enchantment.maxLevel)
                     result = manager.applyEnchantment(result, enchantment, level)
