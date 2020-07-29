@@ -21,6 +21,7 @@ import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
 import util.CollectionList
+import util.ICollectionList
 import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
@@ -132,6 +133,8 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
 
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent) {
+        e.player.walkSpeed = 0.2F
+        ICollectionList.asList(ArrayList(e.player.activePotionEffects)).clone().forEach { pe -> e.player.removePotionEffect(pe.type) }
         CustomEnchantment.deactivateAllActiveEffects(e.player)
     }
 

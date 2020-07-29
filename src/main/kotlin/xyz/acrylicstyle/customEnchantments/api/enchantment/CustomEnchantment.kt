@@ -13,7 +13,7 @@ abstract class CustomEnchantment(val id: String) : Enchantment(-1) {
         val activeEffects = PerPlayerInventory<CollectionList<Pair<CustomEnchantment, Int>>> { _ -> CollectionList() }
 
         fun deactivateAllActiveEffects(player: Player) {
-            activeEffects.get(player.uniqueId).forEach { pair ->
+            activeEffects[player.uniqueId].clone().forEach { pair ->
                 pair.first.deactivate(player, pair.second)
             }
             activeEffects.get(player.uniqueId).clear()
