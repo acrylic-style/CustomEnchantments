@@ -35,7 +35,7 @@ class RegenerationEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPl
 
     override fun isTreasure(): Boolean = false
 
-    override fun getMaxLevel(): Int = 5
+    override fun getMaxLevel(): Int = 1
 
     override fun getStartLevel(): Int = 1
 

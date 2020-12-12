@@ -7,11 +7,13 @@ import org.bukkit.inventory.ItemStack
 import util.Collection
 import util.CollectionList
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
+import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantedData
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 import xyz.acrylicstyle.customEnchantments.api.enchantment.EnchantmentLevel
 import xyz.acrylicstyle.paper.Paper
 import xyz.acrylicstyle.paper.nbt.NBTTagCompound
 import xyz.acrylicstyle.paper.nbt.NBTTagList
+import xyz.acrylicstyle.tomeito_api.utils.Log
 
 open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : EnchantmentManager {
     private val enchantments = CollectionList<CustomEnchantment>()
@@ -34,10 +36,10 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         }.first()
     }
 
-    override fun applyEnchantment(item: ItemStack, enchantment: CustomEnchantment, level: Int): ItemStack {
+    override fun applyEnchantment(item: ItemStack, enchantment: CustomEnchantment, level: Int, anti: Boolean): ItemStack {
         val meta = item.itemMeta
         val lore: CollectionList<String> = CollectionList(if (meta.hasLore()) meta.lore!! else CollectionList<String>())
-        lore.add(ChatColor.GRAY.toString() + "${enchantment.name} " + ChatColor.GRAY + (EnchantmentLevel.getByLevel(level)?.name ?: level))
+        lore.add("${ChatColor.GRAY}${enchantment.name} ${ChatColor.GRAY}" + (EnchantmentLevel.getByLevel(level)?.name ?: level) + (if (anti) " ${ChatColor.RED}(Anti)" else ""))
         meta.lore = lore
         if (!meta.hasEnchants()) {
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
@@ -55,6 +57,7 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         val enchantmentTag = NBTTagCompound()
         enchantmentTag.setString("id", enchantment.key.toString())
         enchantmentTag.setInt("lvl", level)
+        enchantmentTag.setBoolean("anti", anti)
         storedEnchantments.add(enchantmentTag)
         tag.set("storedEnchantments", storedEnchantments)
         itemStack.tag = tag
@@ -112,15 +115,20 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         return existingEnchantment != null
     }
 
-    override fun getEnchantments(item: ItemStack?): CollectionList<CustomEnchantment> {
+    override fun getEnchantments(item: ItemStack?): CollectionList<CustomEnchantedData> {
         if (item == null) return CollectionList()
         val itemStack = Paper.itemStack(item)
         val tag = itemStack.orCreateTag
         val storedEnchantments = (tag.get("storedEnchantments") ?: NBTTagList()) as NBTTagList
-        val enchantments = CollectionList<CustomEnchantment>()
+        val enchantments = CollectionList<CustomEnchantedData>()
         storedEnchantments.forEach { nbt ->
             val t = nbt as NBTTagCompound
-            enchantments.add(getById(t.getString("id")))
+            val ench = getById(t.getString("id"))
+            if (ench == null) {
+                Log.with("CustomEnchantments").warn("Skipping enchantment ${t.getString("id")}")
+                return@forEach
+            }
+            enchantments.add(CustomEnchantedData(ench, t.getBoolean("anti")))
         }
         return enchantments
     }

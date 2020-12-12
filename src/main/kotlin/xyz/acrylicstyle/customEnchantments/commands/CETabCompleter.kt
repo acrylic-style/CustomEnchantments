@@ -8,6 +8,8 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import java.util.*
 
 class CETabCompleter : TabCompleter {
+    private val enchantOption = CollectionList.of("--force", "--anti")
+
     private fun filterArgsList(list: List<String>, s: String): List<String> = CollectionList(list).filter { s2: String ->
         s2.replace(".*:(.*)".toRegex(), "$1")
             .toLowerCase()
@@ -30,9 +32,9 @@ class CETabCompleter : TabCompleter {
                 )
             }
         }
-        if (args.size == 4) {
+        if (args.size >= 4) {
             if (args[0] == "enchant") {
-                return filterArgsList(listOf("--force"), args[3])
+                return filterArgsList(enchantOption.clone().apply { this.removeAll(args.drop(3)) }, args[args.size - 1])
             }
         }
         return Collections.emptyList()

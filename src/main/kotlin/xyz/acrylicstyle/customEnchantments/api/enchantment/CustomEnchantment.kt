@@ -21,7 +21,7 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
         }
     }
 
-    open fun getMaximumAnvilAbleLevel(): Int = maxLevel + 1
+    open fun getMaximumAnvilableLevel(): Int = maxLevel + 1
 
     abstract fun getDescription(): List<String>
     abstract override fun getName(): String // un-deprecate
@@ -43,11 +43,11 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
      * Get the enchantment book item.
      * @throws IllegalStateException when CustomEnchantments plugin isn't loaded
      */
-    fun getEnchantmentBook(level: Int): ItemStack {
+    fun getEnchantmentBook(level: Int, anti: Boolean): ItemStack {
         val item = ItemStack(Material.ENCHANTED_BOOK)
         return CustomEnchantments.getInstance()
                 .orElseThrow { IllegalStateException("CustomEnchantments plugin needs to be loaded to use this feature") }
                 .getManager()
-                .applyEnchantment(item, this, level)
+                .applyEnchantment(item, this, level, anti)
     }
 }

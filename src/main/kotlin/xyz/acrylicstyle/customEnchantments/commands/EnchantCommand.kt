@@ -13,12 +13,14 @@ import xyz.acrylicstyle.tomeito_api.utils.TypeUtil
 class EnchantCommand : PlayerSubCommandExecutor() {
     override fun onCommand(player: Player, args_: Array<String>) {
         if (args_.size < 2) {
-            player.sendMessage(ChatColor.RED.toString() + "/ce enchant <ID> <Level> [--force]")
+            player.sendMessage(ChatColor.RED.toString() + "/ce enchant <ID> <Level> [--force] [--anti]")
             return
         }
         val args = ArgumentParser(ICollectionList.asList(args_).join(" ")).getArguments()
         val force = args.contains("force")
         if (force) args.remove("force")
+        val anti = args.contains("anti")
+        if (anti) args.remove("anti")
         val item = player.inventory.itemInMainHand
         val enchantment = CustomEnchantmentsPlugin.instance.getManager().getById(args[0])
         if (enchantment == null) {
@@ -50,7 +52,7 @@ class EnchantCommand : PlayerSubCommandExecutor() {
             player.sendMessage(ChatColor.RED.toString() + "Cannot apply the enchantment to this item. Use --force to bypass check.")
             return
         }
-        player.inventory.setItemInMainHand(CustomEnchantmentsPlugin.instance.getManager().applyEnchantment(item, enchantment, level))
+        player.inventory.setItemInMainHand(CustomEnchantmentsPlugin.instance.getManager().applyEnchantment(item, enchantment, level, anti))
         player.sendMessage(ChatColor.GREEN.toString() + "Applied the enchantment successfully.")
     }
 }

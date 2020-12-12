@@ -9,8 +9,8 @@ import org.bukkit.inventory.ItemStack
 import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
-class MukiEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "muki1574")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases the damage to 1000% when attacking muki1574.")
+class MeEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "me")) {
+    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases the damage to 100000% when attacking me.")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("SWORD")
@@ -18,7 +18,7 @@ class MukiEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.ins
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.WEAPON
 
-    override fun getName(): String = "muki特攻"
+    override fun getName(): String = "ふーぷ特攻"
 
     override fun isCursed(): Boolean = false
 

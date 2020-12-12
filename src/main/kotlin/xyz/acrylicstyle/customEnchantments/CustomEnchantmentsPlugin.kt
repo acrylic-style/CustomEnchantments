@@ -9,11 +9,13 @@ import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.inventory.PrepareAnvilEvent
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -48,6 +50,8 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         CustomEnchantmentsPlugin.config = CustomEnchantmentConfig()
         Log.info("Registering enchantments")
         manager.registerEnchantment(MukiEnchant())
+        manager.registerEnchantment(RenyokoEnchant())
+        manager.registerEnchantment(MeEnchant())
         manager.registerEnchantment(SpeedEnchant())
         manager.registerEnchantment(RegenerationEnchant())
         manager.registerEnchantment(AntiHungryEnchant())
@@ -69,7 +73,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                         Log.warn("Skipping duplicate enchantment key: effects.$key")
                         return@forEach
                     }
-                    val recipe = ShapedRecipe(enchantment.key, enchantment.getEnchantmentBook(1))
+                    val recipe = ShapedRecipe(enchantment.key, enchantment.getEnchantmentBook(1, false))
                     recipe.shape("012", "345", "678")
                     for (i in 0..8) {
                         val item = CustomEnchantmentsPlugin.config.getItem("effects.$key.crafting.slot$i") ?: continue
@@ -124,6 +128,23 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                 }
             }
         }
+        if  (anvil.firstItem != null && anvil.firstItem!!.type == Material.ENCHANTED_BOOK && anvil.secondItem?.type == Material.REDSTONE_TORCH) {
+            e.isCancelled = true
+            (e.whoClicked as Player).playSound(e.whoClicked.location, Sound.BLOCK_ANVIL_USE, 1F, 1F)
+            if (anvil.result != null) {
+                e.whoClicked
+                    .inventory
+                    .addItem(anvil.result)
+                    .forEach { (_, item) -> e.whoClicked.world.dropItem(e.whoClicked.location, item) }
+                anvil.firstItem = null
+                if (anvil.secondItem!!.amount == 1) {
+                    anvil.secondItem = null
+                } else {
+                    anvil.secondItem!!.amount = anvil.secondItem!!.amount - 1
+                }
+                anvil.result = null
+            }
+        }
     }
 
     @EventHandler
@@ -135,30 +156,44 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             if (manager.hasEnchantments(second)) { // first = true, second = true
                 var result = first!!.clone()
                 manager.getEnchantments(second).forEach { enchantment ->
-                    if (!eBook && !enchantment.canEnchantItem(result)) return@forEach
-                    val level1 = manager.getEnchantmentLevel(first, enchantment)
-                    val level2 = manager.getEnchantmentLevel(second, enchantment)
+                    if (!eBook && !enchantment.enchantment.canEnchantItem(result)) return@forEach
+                    val level1 = manager.getEnchantmentLevel(first, enchantment.enchantment)
+                    val level2 = manager.getEnchantmentLevel(second, enchantment.enchantment)
                     if (level1 != level2) {
-                        result = manager.removeEnchantment(result, enchantment)
-                        result = manager.applyEnchantment(result, enchantment, level1.coerceAtLeast(level2))
+                        result = manager.removeEnchantment(result, enchantment.enchantment)
+                        if (!enchantment.isAnti) result = manager.applyEnchantment(result, enchantment.enchantment, level1.coerceAtLeast(level2), false)
                         return@forEach
                     }
-                    result = manager.removeEnchantment(result, enchantment)
-                    val level = if (level2 >= enchantment.getMaximumAnvilAbleLevel() && !eBook) level2 else (level2 + 1).coerceAtMost(enchantment.maxLevel)
-                    result = manager.applyEnchantment(result, enchantment, level)
+                    result = manager.removeEnchantment(result, enchantment.enchantment)
+                    val level = if (level2 >= enchantment.enchantment.getMaximumAnvilableLevel() && !eBook) level2 else (level2 + 1).coerceAtMost(enchantment.enchantment.maxLevel)
+                    if (!enchantment.isAnti) result = manager.applyEnchantment(result, enchantment.enchantment, level, false)
                 }
                 e.inventory.result = result
                 e.result = result
             } else { // first = true, second = false
+                if (eBook && second != null && second.type == Material.REDSTONE_TORCH) { // anti / de-anti enchant
+                    var result = first!!.clone()
+                    manager.getEnchantments(first).forEach { enchantment ->
+                        val level = manager.getEnchantmentLevel(first, enchantment.enchantment)
+                        result = manager.removeEnchantment(result, enchantment.enchantment)
+                        result = manager.applyEnchantment(result, enchantment.enchantment, level, !enchantment.isAnti)
+                    }
+                    e.inventory.result = result
+                    e.result = result
+                }
                 return // it must be something that we cannot modify
             }
         } else {
             if (first != null && manager.hasEnchantments(second)) { // first = false, second = true
                 var result = first.clone()
                 manager.getEnchantments(second).forEach { enchantment ->
-                    if (!enchantment.canEnchantItem(result)) return@forEach
-                    val level = manager.getEnchantmentLevel(second, enchantment)
-                    result = manager.applyEnchantment(result, enchantment, level)
+                    if (!enchantment.enchantment.canEnchantItem(result)) return@forEach
+                    val level = manager.getEnchantmentLevel(second, enchantment.enchantment)
+                    result = if (enchantment.isAnti) {
+                        manager.removeEnchantment(result, enchantment.enchantment)
+                    } else {
+                        manager.applyEnchantment(result, enchantment.enchantment, level, false)
+                    }
                 }
                 e.inventory.result = result
                 e.result = result
@@ -175,24 +210,50 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
 
     @EventHandler
     fun onPlayerArmorChange(e: PlayerArmorChangeEvent) {
-        manager.getEnchantments(e.newItem).forEach { enchantment ->
-            if (enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.itemTarget == EnchantmentTarget.WEARABLE)
-                enchantment.activate(e.player, manager.getEnchantmentLevel(e.newItem, enchantment))
-        }
+        // order is *VERY* important
         manager.getEnchantments(e.oldItem).forEach { enchantment ->
-            if (enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.itemTarget == EnchantmentTarget.WEARABLE)
-                enchantment.deactivate(e.player, manager.getEnchantmentLevel(e.oldItem, enchantment))
+            if (enchantment.enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.enchantment.itemTarget == EnchantmentTarget.WEARABLE)
+                enchantment.enchantment.deactivate(e.player, manager.getEnchantmentLevel(e.oldItem, enchantment.enchantment))
+        }
+        manager.getEnchantments(e.newItem).forEach { enchantment ->
+            if (enchantment.enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.enchantment.itemTarget == EnchantmentTarget.WEARABLE)
+                enchantment.enchantment.activate(e.player, manager.getEnchantmentLevel(e.newItem, enchantment.enchantment))
         }
     }
+
+    private val victim1 = UUID.fromString("7ffad749-e54d-4a13-908d-ed8807eb6d25")
+    private val victim2 = UUID.fromString("9c29137b-54a8-4e9a-ab22-f614cd23cc3b")
+    private val victim3 = UUID.fromString("1865ab8c-700b-478b-9b52-a8c58739df1a")
 
     @EventHandler
     fun onEntityDamageByEntity(e: EntityDamageByEntityEvent) {
         if (e.entity is Player && e.damager is Player) {
             val player = e.entity as Player
             val damager = e.damager as Player
-            if (player.uniqueId == UUID.fromString("7ffad749-e54d-4a13-908d-ed8807eb6d25")) {
+            if (player.uniqueId == victim1) {
                 if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(MukiEnchant::class.java)!!)) {
                     e.damage = e.damage * 10
+                }
+            }
+            if (player.uniqueId == victim2) {
+                if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(RenyokoEnchant::class.java)!!)) {
+                    e.damage = e.damage * 10
+                }
+            }
+            if (player.uniqueId == victim3) {
+                if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(MeEnchant::class.java)!!)) {
+                    e.damage = e.damage * 1000
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerInteract(e: PlayerInteractEvent) {
+        if (e.action == Action.RIGHT_CLICK_AIR || e.action == Action.RIGHT_CLICK_BLOCK) {
+            if (e.player.uniqueId == victim3) {
+                if (manager.hasEnchantment(e.player.inventory.itemInMainHand, manager.getEnchantment(MeEnchant::class.java)!!)) {
+                    e.player.health = 0.0
                 }
             }
         }
@@ -200,15 +261,15 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
 
     @EventHandler
     fun onPlayerItemHeld(e: PlayerItemHeldEvent) {
-        val newItem = e.player.inventory.getItem(e.newSlot)
-        manager.getEnchantments(newItem).forEach { enchantment ->
-            if (!enchantment.itemTarget.name.startsWith("ARMOR") && enchantment.itemTarget != EnchantmentTarget.WEARABLE)
-                enchantment.activate(e.player, manager.getEnchantmentLevel(newItem, enchantment))
-        }
         val oldItem = e.player.inventory.getItem(e.previousSlot)
         manager.getEnchantments(oldItem).forEach { enchantment ->
-            if (!enchantment.itemTarget.name.startsWith("ARMOR") && enchantment.itemTarget != EnchantmentTarget.WEARABLE)
-                enchantment.deactivate(e.player, manager.getEnchantmentLevel(oldItem, enchantment))
+            if (!enchantment.enchantment.itemTarget.name.startsWith("ARMOR") && enchantment.enchantment.itemTarget != EnchantmentTarget.WEARABLE)
+                enchantment.enchantment.deactivate(e.player, manager.getEnchantmentLevel(oldItem, enchantment.enchantment))
+        }
+        val newItem = e.player.inventory.getItem(e.newSlot)
+        manager.getEnchantments(newItem).forEach { enchantment ->
+            if (!enchantment.enchantment.itemTarget.name.startsWith("ARMOR") && enchantment.enchantment.itemTarget != EnchantmentTarget.WEARABLE)
+                enchantment.enchantment.activate(e.player, manager.getEnchantmentLevel(newItem, enchantment.enchantment))
         }
     }
 
