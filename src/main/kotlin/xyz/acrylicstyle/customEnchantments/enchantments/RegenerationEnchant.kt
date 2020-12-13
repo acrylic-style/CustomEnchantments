@@ -12,7 +12,7 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class RegenerationEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "regeneration")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Gives you regeneration.")
+    override fun getDescription(level: Int): List<String> = listOf("再生能力が", "${ChatColor.GREEN}$level${ChatColor.GRAY}上昇します。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         val s = item.type.name

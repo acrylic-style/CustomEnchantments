@@ -12,7 +12,7 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class JumpEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "jump")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases jump boost by enchantment level.")
+    override fun getDescription(level: Int): List<String> = listOf("跳躍力上昇が", "${ChatColor.GREEN}+$level${ChatColor.GRAY}上昇します。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("BOOTS")

@@ -6,6 +6,7 @@ import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
 import util.Collection
 import util.CollectionList
+import util.ICollectionList
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantedData
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
@@ -14,6 +15,7 @@ import xyz.acrylicstyle.paper.Paper
 import xyz.acrylicstyle.paper.nbt.NBTTagCompound
 import xyz.acrylicstyle.paper.nbt.NBTTagList
 import xyz.acrylicstyle.tomeito_api.utils.Log
+import java.util.concurrent.atomic.AtomicBoolean
 
 open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : EnchantmentManager {
     private val enchantments = CollectionList<CustomEnchantment>()
@@ -39,7 +41,16 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
     override fun applyEnchantment(item: ItemStack, enchantment: CustomEnchantment, level: Int, anti: Boolean): ItemStack {
         val meta = item.itemMeta
         val lore: CollectionList<String> = CollectionList(if (meta.hasLore()) meta.lore!! else CollectionList<String>())
-        lore.add("${ChatColor.GRAY}${enchantment.name} ${ChatColor.GRAY}" + (EnchantmentLevel.getByLevel(level)?.name ?: level) + (if (anti) " ${ChatColor.RED}(Anti)" else ""))
+        if (!lore.anyMatch { s -> s.startsWith("${ChatColor.BLUE}${enchantment.name} ") }) {
+            lore.add(
+                "${ChatColor.BLUE}${enchantment.name} ${ChatColor.BLUE}" + (EnchantmentLevel.getByLevel(level)?.name
+                    ?: level) + (if (anti) " ${ChatColor.RED}(Anti)" else "")
+            )
+            if (enchantment.getDescription(level).isNotEmpty()) lore.addAll(
+                ICollectionList.asList(enchantment.getDescription(level))
+                    .map { s -> "${ChatColor.GRAY}$s" } as kotlin.collections.Collection<String>)
+            lore.add(" ")
+        }
         meta.lore = lore
         if (!meta.hasEnchants()) {
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
@@ -64,11 +75,31 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
         return itemStack.itemStack
     }
 
+    private fun findLore(list: CollectionList<String>, enchantment: CustomEnchantment): CollectionList<String> {
+        val lst = CollectionList<String>()
+        val lookAhead = AtomicBoolean()
+        list.forEach { s ->
+            if (s.startsWith("${ChatColor.GRAY}${enchantment.name} ")) {
+                lst.add(s)
+                return@forEach
+            }
+            if (s.startsWith("${ChatColor.BLUE}${enchantment.name} ")) {
+                lst.add(s)
+                lookAhead.set(true)
+            }
+            if (!lookAhead.get()) return@forEach
+            if (lst.isNotEmpty()) {
+                lst.add(s)
+                if (s == " ") lookAhead.set(false)
+            }
+        }
+        return lst
+    }
+
     override fun removeEnchantment(item: ItemStack, enchantment: CustomEnchantment): ItemStack {
         val meta = item.itemMeta
         val lore: CollectionList<String> = CollectionList(if (meta.hasLore()) meta.lore!! else CollectionList<String>())
-        val s = lore.find { s -> s.startsWith(ChatColor.GRAY.toString() + "${enchantment.name} ") }
-        if (s != null) lore.remove(s)
+        lore.removeAll(findLore(lore, enchantment))
         meta.lore = if (lore.isEmpty()) null else lore
         item.itemMeta = meta
         val itemStack = Paper.itemStack(item)
@@ -128,7 +159,7 @@ open class EnchantmentManagerImpl(val plugin: CustomEnchantmentsPlugin) : Enchan
                 Log.with("CustomEnchantments").warn("Skipping enchantment ${t.getString("id")}")
                 return@forEach
             }
-            enchantments.add(CustomEnchantedData(ench, t.getBoolean("anti")))
+            enchantments.add(CustomEnchantedData(ench, t.getInt("lvl"), t.getBoolean("anti")))
         }
         return enchantments
     }

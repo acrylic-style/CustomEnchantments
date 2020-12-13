@@ -14,7 +14,7 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
         val activeEffects = PerPlayerInventory<CollectionList<Pair<CustomEnchantment, Int>>> { _ -> CollectionList() }
 
         fun deactivateAllActiveEffects(player: Player) {
-            activeEffects.get(player.uniqueId).forEach { pair ->
+            activeEffects.get(player.uniqueId).clone().forEach { pair ->
                 pair.first.deactivate(player, pair.second)
             }
             activeEffects.get(player.uniqueId).clear()
@@ -23,7 +23,7 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
 
     open fun getMaximumAnvilableLevel(): Int = maxLevel + 1
 
-    abstract fun getDescription(): List<String>
+    abstract fun getDescription(level: Int): List<String>
     abstract override fun getName(): String // un-deprecate
     abstract override fun isCursed(): Boolean // un-deprecate
     protected open fun onActivate(player: Player, level: Int) {}

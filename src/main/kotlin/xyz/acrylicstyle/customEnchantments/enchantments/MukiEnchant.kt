@@ -10,7 +10,7 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class MukiEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "muki1574")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases the damage to 1000% when attacking muki1574.")
+    override fun getDescription(level: Int): List<String> = listOf("muki1574を攻撃するときに", "${ChatColor.GREEN}${1000 * level}%${ChatColor.GRAY}のダメージを与えます。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("SWORD")

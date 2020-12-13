@@ -10,7 +10,7 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "speed")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases speed.")
+    override fun getDescription(level: Int): List<String> = listOf("移動する速度が", "${ChatColor.GREEN}${level * 0.02}${ChatColor.GRAY}上昇します。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("BOOTS")
@@ -18,7 +18,7 @@ class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.in
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR_FEET
 
-    override fun getName(): String = "迅速" // todo: localization?
+    override fun getName(): String = "迅速"
 
     override fun isCursed(): Boolean = false
 

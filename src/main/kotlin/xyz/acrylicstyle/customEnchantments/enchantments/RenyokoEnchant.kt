@@ -10,7 +10,7 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class RenyokoEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "renyoko")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases the damage to 1000% when attacking renyoko.")
+    override fun getDescription(level: Int): List<String> = listOf("renyokoを攻撃するときに", "${ChatColor.GREEN}${1000 * level}%${ChatColor.GRAY}のダメージを与えます。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("SWORD")

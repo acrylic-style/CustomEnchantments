@@ -155,17 +155,25 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         if (manager.hasEnchantments(first)) {
             if (manager.hasEnchantments(second)) { // first = true, second = true
                 var result = first!!.clone()
+                manager.getEnchantments(first).forEach { enchantment ->
+                    result = manager.removeEnchantment(result, enchantment.enchantment)
+                }
+                manager.getEnchantments(second).forEach { enchantment ->
+                    result = manager.removeEnchantment(result, enchantment.enchantment)
+                }
+                manager.getEnchantments(first).forEach { enchantment ->
+                    result = manager.applyEnchantment(result, enchantment.enchantment, enchantment.level, enchantment.isAnti)
+                }
                 manager.getEnchantments(second).forEach { enchantment ->
                     if (!eBook && !enchantment.enchantment.canEnchantItem(result)) return@forEach
                     val level1 = manager.getEnchantmentLevel(first, enchantment.enchantment)
-                    val level2 = manager.getEnchantmentLevel(second, enchantment.enchantment)
+                    val level2 = enchantment.level
                     if (level1 != level2) {
-                        result = manager.removeEnchantment(result, enchantment.enchantment)
                         if (!enchantment.isAnti) result = manager.applyEnchantment(result, enchantment.enchantment, level1.coerceAtLeast(level2), false)
                         return@forEach
                     }
-                    result = manager.removeEnchantment(result, enchantment.enchantment)
-                    val level = if (level2 >= enchantment.enchantment.getMaximumAnvilableLevel() && !eBook) level2 else (level2 + 1).coerceAtMost(enchantment.enchantment.maxLevel)
+                    val level = if (level2 >= enchantment.enchantment.getMaximumAnvilableLevel()) level2 else (level2 + 1).coerceAtMost(enchantment.enchantment.maxLevel)
+                    //val level = if (level2 >= enchantment.enchantment.getMaximumAnvilableLevel() && !eBook) level2 else (level2 + 1).coerceAtMost(enchantment.enchantment.maxLevel)
                     if (!enchantment.isAnti) result = manager.applyEnchantment(result, enchantment.enchantment, level, false)
                 }
                 e.inventory.result = result
@@ -174,9 +182,10 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                 if (eBook && second != null && second.type == Material.REDSTONE_TORCH) { // anti / de-anti enchant
                     var result = first!!.clone()
                     manager.getEnchantments(first).forEach { enchantment ->
-                        val level = manager.getEnchantmentLevel(first, enchantment.enchantment)
                         result = manager.removeEnchantment(result, enchantment.enchantment)
-                        result = manager.applyEnchantment(result, enchantment.enchantment, level, !enchantment.isAnti)
+                    }
+                    manager.getEnchantments(first).forEach { enchantment ->
+                        result = manager.applyEnchantment(result, enchantment.enchantment, enchantment.level, !enchantment.isAnti)
                     }
                     e.inventory.result = result
                     e.result = result
@@ -230,19 +239,20 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         if (e.entity is Player && e.damager is Player) {
             val player = e.entity as Player
             val damager = e.damager as Player
+            val item = damager.inventory.itemInMainHand
             if (player.uniqueId == victim1) {
-                if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(MukiEnchant::class.java)!!)) {
-                    e.damage = e.damage * 10
+                if (manager.hasEnchantment(item, manager.getEnchantment(MukiEnchant::class.java)!!)) {
+                    e.damage = e.damage * (10 * manager.getEnchantmentLevel(item, manager.getEnchantment(MukiEnchant::class.java)!!))
                 }
             }
             if (player.uniqueId == victim2) {
-                if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(RenyokoEnchant::class.java)!!)) {
-                    e.damage = e.damage * 10
+                if (manager.hasEnchantment(item, manager.getEnchantment(RenyokoEnchant::class.java)!!)) {
+                    e.damage = e.damage * (10 * manager.getEnchantmentLevel(item, manager.getEnchantment(RenyokoEnchant::class.java)!!))
                 }
             }
             if (player.uniqueId == victim3) {
                 if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(MeEnchant::class.java)!!)) {
-                    e.damage = e.damage * 1000
+                    e.damage = e.damage * (1000 * manager.getEnchantmentLevel(item, manager.getEnchantment(MeEnchant::class.java)!!))
                 }
             }
         }

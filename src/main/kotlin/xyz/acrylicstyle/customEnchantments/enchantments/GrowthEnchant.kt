@@ -12,7 +12,7 @@ import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 import kotlin.math.max
 
 class GrowthEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "growth")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases health by 5 * enchantment level.")
+    override fun getDescription(level: Int): List<String> = listOf("最大体力が", "${ChatColor.RED}${level / 2F}${ChatColor.RED}❤${ChatColor.GRAY}増加します。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         val s = item.type.name

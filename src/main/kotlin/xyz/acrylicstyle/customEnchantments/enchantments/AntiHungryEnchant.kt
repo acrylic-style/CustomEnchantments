@@ -12,7 +12,7 @@ import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class AntiHungryEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "anti_hungry")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Gives you saturation, the ultimate anti-hungry solution.")
+    override fun getDescription(level: Int): List<String> = listOf("満腹度回復${ChatColor.GREEN}$level${ChatColor.GRAY}を付与します。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         val s = item.type.name
@@ -35,7 +35,9 @@ class AntiHungryEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlug
 
     override fun isTreasure(): Boolean = false
 
-    override fun getMaxLevel(): Int = 5
+    override fun getMaximumAnvilableLevel(): Int = 1
+
+    override fun getMaxLevel(): Int = 1
 
     override fun getStartLevel(): Int = 1
 

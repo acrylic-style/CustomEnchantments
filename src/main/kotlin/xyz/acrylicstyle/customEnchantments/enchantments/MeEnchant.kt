@@ -4,13 +4,12 @@ import org.bukkit.ChatColor
 import org.bukkit.NamespacedKey
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.enchantments.EnchantmentTarget
-import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class MeEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "me")) {
-    override fun getDescription(): List<String> = listOf(ChatColor.YELLOW.toString() + "Increases the damage to 100000% when attacking me.")
+    override fun getDescription(level: Int): List<String> = listOf("PolicyViolationを攻撃するときに", "${ChatColor.GREEN}${100000 * level}%${ChatColor.GRAY}のダメージを与えます。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("SWORD")
