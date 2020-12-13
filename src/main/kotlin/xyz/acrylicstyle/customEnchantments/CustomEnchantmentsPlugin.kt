@@ -2,14 +2,18 @@ package xyz.acrylicstyle.customEnchantments
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.Sound
+import org.bukkit.block.Block
+import org.bukkit.enchantments.Enchantment
 import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
+import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.inventory.InventoryClickEvent
@@ -24,6 +28,9 @@ import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
 import util.CollectionList
+import util.CollectionSet
+import util.MathUtils
+import xyz.acrylicstyle.customEnchantments.EnchantmentManagerImpl.Companion.getNearbyBlocks
 import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
@@ -32,6 +39,8 @@ import xyz.acrylicstyle.customEnchantments.enchantments.*
 import xyz.acrylicstyle.tomeito_api.TomeitoAPI
 import xyz.acrylicstyle.tomeito_api.utils.Log
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     companion object {
@@ -49,6 +58,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     override fun onEnable() {
         CustomEnchantmentsPlugin.config = CustomEnchantmentConfig()
         Log.info("Registering enchantments")
+        manager.registerEnchantment(JungleAxeEnchant())
         manager.registerEnchantment(MukiEnchant())
         manager.registerEnchantment(RenyokoEnchant())
         manager.registerEnchantment(MeEnchant())
@@ -255,6 +265,56 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                     e.damage = e.damage * (1000 * manager.getEnchantmentLevel(item, manager.getEnchantment(MeEnchant::class.java)!!))
                 }
             }
+        }
+    }
+
+    @EventHandler
+    fun onBlockBreak(e: BlockBreakEvent) {
+        val item = e.player.inventory.itemInMainHand
+        val type = e.block.type
+        if (e.expToDrop != -1
+            && item.type.name.endsWith("AXE")
+            && manager.hasEnchantment(item, manager.getEnchantment(JungleAxeEnchant::class.java)!!)
+            && type.name.endsWith("_LOG")) {
+            val blocks = 10 * manager.getEnchantmentLevel(item, manager.getEnchantment(JungleAxeEnchant::class.java)!!)
+            val harvestedBlocks = AtomicInteger(1)
+            val period = MathUtils.max(10 - item.getEnchantmentLevel(Enchantment.DIG_SPEED), 1).toLong()
+            val loc: AtomicReference<Location?> = AtomicReference()
+            val checkedLocation = CollectionSet<Location>()
+            val locationsToCheck = CollectionSet<Location>(e.block.location)
+            object: BukkitRunnable() {
+                override fun run() {
+                    if (harvestedBlocks.get() > blocks) {
+                        this.cancel()
+                        return
+                    }
+                    val theBlock: Block
+                    while (true) {
+                        if (loc.get() == null) {
+                            loc.set(locationsToCheck.first())
+                            if (loc.get() == null) {
+                                this.cancel()
+                                return
+                            }
+                            checkedLocation.add(locationsToCheck.first())
+                            locationsToCheck.remove(locationsToCheck.first())
+                        }
+                        val nearbyBlock = loc.get()!!.getNearbyBlocks(1).nonNull().filter { block -> !block.type.isAir }.filter { block -> block.type == type }.first()
+                        if (nearbyBlock == null) {
+                            loc.set(null)
+                            continue
+                        }
+                        theBlock = nearbyBlock
+                        break
+                    }
+                    if (BlockBreakEvent(theBlock, e.player).apply { expToDrop = -1 }.callEvent()) {
+                        theBlock.breakNaturally()
+                        theBlock.world.playSound(theBlock.location, Sound.BLOCK_WOOD_BREAK, 1F, 1F)
+                        if (!checkedLocation.contains(theBlock.location)) locationsToCheck.add(theBlock.location)
+                        harvestedBlocks.incrementAndGet()
+                    }
+                }
+            }.runTaskTimer(this, period, period)
         }
     }
 
