@@ -5,8 +5,10 @@ import util.StringCollection
 
 @Suppress("SpellCheckingInspection", "unused")
 enum class EnchantmentLevel(private val level: Int) {
+    F(2147483647),
+    L(32767),
     M(1000),
-    L(50),
+    XXXXX(50),
     XXXXIX(49),
     XXXXVIII(48),
     XXXXVII(47),
