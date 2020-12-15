@@ -282,6 +282,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             val loc: AtomicReference<Location?> = AtomicReference()
             val checkedLocation = CollectionSet<Location>()
             val locationsToCheck = CollectionSet<Location>(e.block.location)
+            val checkedBlock = CollectionSet<Location>()
             object: BukkitRunnable() {
                 override fun run() {
                     if (harvestedBlocks.get() > blocks) {
@@ -299,7 +300,12 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                             checkedLocation.add(locationsToCheck.first())
                             locationsToCheck.remove(locationsToCheck.first())
                         }
-                        val nearbyBlock = loc.get()!!.getNearbyBlocks(1).nonNull().filter { block -> !block.type.isAir }.filter { block -> block.type == type }.first()
+                        val nearbyBlock = loc.get()!!.getNearbyBlocks(1)
+                            .nonNull()
+                            .filter { block -> !checkedBlock.contains(block.location) }
+                            .filter { block -> !block.type.isAir }
+                            .filter { block -> block.type == type }
+                            .first()
                         if (nearbyBlock == null) {
                             loc.set(null)
                             continue
@@ -312,6 +318,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                         theBlock.world.playSound(theBlock.location, Sound.BLOCK_WOOD_BREAK, 1F, 1F)
                         if (!checkedLocation.contains(theBlock.location)) locationsToCheck.add(theBlock.location)
                         harvestedBlocks.incrementAndGet()
+                        checkedBlock.add(theBlock.location)
                     }
                 }
             }.runTaskTimer(this, period, period)
