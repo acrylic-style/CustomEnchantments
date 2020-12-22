@@ -8,7 +8,6 @@ import org.bukkit.NamespacedKey
 import org.bukkit.Sound
 import org.bukkit.block.Block
 import org.bukkit.enchantments.Enchantment
-import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -33,6 +32,7 @@ import util.MathUtils
 import xyz.acrylicstyle.customEnchantments.EnchantmentManagerImpl.Companion.getNearbyBlocks
 import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
 import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
+import xyz.acrylicstyle.customEnchantments.api.enchantment.ActivateType
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 import xyz.acrylicstyle.customEnchantments.commands.CETabCompleter
 import xyz.acrylicstyle.customEnchantments.enchantments.*
@@ -57,7 +57,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
 
     override fun onEnable() {
         CustomEnchantmentsPlugin.config = CustomEnchantmentConfig()
-        Log.info("Registering enchantments")
+        Log.with("CustomEnchantments").info("Registering enchantments")
         manager.registerEnchantment(JungleAxeEnchant())
         manager.registerEnchantment(MukiEnchant())
         manager.registerEnchantment(RenyokoEnchant())
@@ -71,16 +71,16 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             override fun run() {
                 CustomEnchantmentsPlugin.config.getConfigSectionValue("effects", false).keys.forEach { key ->
                     if (key.contains(":")) {
-                        Log.warn("Do not include ':' in the key: effects.$key")
+                        Log.warn("Skipping: Do not include ':' in the key: effects.$key")
                         return@forEach
                     }
                     val enchantment = manager.getById(key)
                     if (enchantment == null) {
-                        Log.warn("Skipping invalid enchantment key: effects.$key")
+                        Log.warn("Skipping: Invalid enchantment key: effects.$key")
                         return@forEach
                     }
                     if (recipes.find { namespacedKey -> namespacedKey == enchantment.key } != null) {
-                        Log.warn("Skipping duplicate enchantment key: effects.$key")
+                        Log.warn("Skipping: Duplicate enchantment key: effects.$key")
                         return@forEach
                     }
                     val recipe = ShapedRecipe(enchantment.key, enchantment.getEnchantmentBook(1, false))
@@ -90,7 +90,11 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                         recipe.setIngredient(i.toString()[0], item)
                     }
                     recipes.add(enchantment.key)
-                    Bukkit.addRecipe(recipe)
+                    try {
+                        Bukkit.addRecipe(recipe)
+                    } catch (e: IllegalStateException) {
+                        Log.warn("Ignoring duplicate recipe of effects.$key")
+                    }
                 }
             }
         }.runTaskLater(this, 1)
@@ -111,11 +115,13 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent) {
         CustomEnchantment.deactivateAllActiveEffects(e.player)
+        e.player.walkSpeed = 0.2F
     }
 
     @EventHandler
     fun onPlayerQuit(e: PlayerQuitEvent) {
         CustomEnchantment.deactivateAllActiveEffects(e.player)
+        e.player.walkSpeed = 0.2F
     }
 
     @EventHandler
@@ -231,11 +237,10 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     fun onPlayerArmorChange(e: PlayerArmorChangeEvent) {
         // order is *VERY* important
         manager.getEnchantments(e.oldItem).forEach { enchantment ->
-            if (enchantment.enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.enchantment.itemTarget == EnchantmentTarget.WEARABLE)
-                enchantment.enchantment.deactivate(e.player, manager.getEnchantmentLevel(e.oldItem, enchantment.enchantment))
+            enchantment.enchantment.deactivate(e.player, manager.getEnchantmentLevel(e.oldItem, enchantment.enchantment))
         }
         manager.getEnchantments(e.newItem).forEach { enchantment ->
-            if (enchantment.enchantment.itemTarget.name.startsWith("ARMOR") || enchantment.enchantment.itemTarget == EnchantmentTarget.WEARABLE)
+            if (enchantment.enchantment.canActivateEnchantment(ActivateType.ARMOR_CHANGED, e.newItem!!))
                 enchantment.enchantment.activate(e.player, manager.getEnchantmentLevel(e.newItem, enchantment.enchantment))
         }
     }
@@ -272,6 +277,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     fun onBlockBreak(e: BlockBreakEvent) {
         val item = e.player.inventory.itemInMainHand
         val type = e.block.type
+        if (e.block.location.world.name == "world") return
         if (e.expToDrop != -1
             && item.type.name.endsWith("AXE")
             && manager.hasEnchantment(item, manager.getEnchantment(JungleAxeEnchant::class.java)!!)
@@ -340,12 +346,11 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     fun onPlayerItemHeld(e: PlayerItemHeldEvent) {
         val oldItem = e.player.inventory.getItem(e.previousSlot)
         manager.getEnchantments(oldItem).forEach { enchantment ->
-            if (!enchantment.enchantment.itemTarget.name.startsWith("ARMOR") && enchantment.enchantment.itemTarget != EnchantmentTarget.WEARABLE)
-                enchantment.enchantment.deactivate(e.player, manager.getEnchantmentLevel(oldItem, enchantment.enchantment))
+            enchantment.enchantment.deactivate(e.player, manager.getEnchantmentLevel(oldItem, enchantment.enchantment))
         }
         val newItem = e.player.inventory.getItem(e.newSlot)
         manager.getEnchantments(newItem).forEach { enchantment ->
-            if (!enchantment.enchantment.itemTarget.name.startsWith("ARMOR") && enchantment.enchantment.itemTarget != EnchantmentTarget.WEARABLE)
+            if (enchantment.enchantment.canActivateEnchantment(ActivateType.ITEM_HELD, newItem!!))
                 enchantment.enchantment.activate(e.player, manager.getEnchantmentLevel(newItem, enchantment.enchantment))
         }
     }

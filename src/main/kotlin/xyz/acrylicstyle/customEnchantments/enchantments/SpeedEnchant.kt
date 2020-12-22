@@ -7,14 +7,16 @@ import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
+import xyz.acrylicstyle.customEnchantments.api.enchantment.ActivateType
 import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
 
 class SpeedEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "speed")) {
     override fun getDescription(level: Int): List<String> = listOf("移動する速度が", "${ChatColor.GREEN}${level * 0.02}${ChatColor.GRAY}上昇します。")
 
-    override fun canEnchantItem(item: ItemStack): Boolean {
-        return item.type.name.endsWith("BOOTS")
-    }
+    override fun canEnchantItem(item: ItemStack): Boolean = item.type.name.endsWith("BOOTS")
+
+    override fun canActivateEnchantment(type: ActivateType, item: ItemStack): Boolean =
+        type == ActivateType.ARMOR_CHANGED && item.type.name.endsWith("BOOTS")
 
     override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR_FEET
 

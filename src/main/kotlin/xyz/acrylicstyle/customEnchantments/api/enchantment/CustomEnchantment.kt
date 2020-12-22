@@ -3,11 +3,13 @@ package xyz.acrylicstyle.customEnchantments.api.enchantment
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.enchantments.Enchantment
+import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import util.CollectionList
 import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
 import xyz.acrylicstyle.tomeito_api.gui.PerPlayerInventory
+import xyz.acrylicstyle.tomeito_api.utils.Log
 
 abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
     companion object {
@@ -22,9 +24,20 @@ abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
     }
 
     open fun getMaximumAnvilableLevel(): Int = maxLevel + 1
+    open fun canActivateEnchantment(type: ActivateType, item: ItemStack): Boolean {
+        if (item.type == Material.ENCHANTED_BOOK) return false // enchanted books cannot activate enchantments
+        return if (type == ActivateType.ARMOR_CHANGED) {
+            itemTarget.name.startsWith("ARMOR") || itemTarget == EnchantmentTarget.WEARABLE
+        } else if (type == ActivateType.ITEM_HELD) {
+            !itemTarget.name.startsWith("ARMOR") && itemTarget != EnchantmentTarget.WEARABLE
+        } else {
+            Log.with("CustomEnchantments").warn("Unknown ActivateType: ${type.name}")
+            true // :thinking:
+        }
+    }
 
     abstract fun getDescription(level: Int): List<String>
-    abstract override fun getName(): String // un-deprecate
+    abstract override fun getName(): String // un-deprecate, remove 'override' modifier when it was removed on Enchantment class
     abstract override fun isCursed(): Boolean // un-deprecate
     protected open fun onActivate(player: Player, level: Int) {}
     protected open fun onDeactivate(player: Player, level: Int) {}
