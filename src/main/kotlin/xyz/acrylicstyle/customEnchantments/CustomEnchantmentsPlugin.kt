@@ -290,6 +290,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             val locationsToCheck = CollectionSet<Location>(e.block.location)
             val checkedBlock = CollectionSet<Location>()
             object: BukkitRunnable() {
+                @Suppress("DEPRECATION")
                 override fun run() {
                     if (harvestedBlocks.get() > blocks) {
                         this.cancel()
