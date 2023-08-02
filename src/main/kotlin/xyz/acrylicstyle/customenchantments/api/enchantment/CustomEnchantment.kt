@@ -1,4 +1,4 @@
-package xyz.acrylicstyle.customEnchantments.api.enchantment
+package xyz.acrylicstyle.customenchantments.api.enchantment
 
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
@@ -6,49 +6,51 @@ import org.bukkit.enchantments.Enchantment
 import org.bukkit.enchantments.EnchantmentTarget
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import util.CollectionList
-import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
-import xyz.acrylicstyle.tomeito_api.gui.PerPlayerInventory
-import xyz.acrylicstyle.tomeito_api.utils.Log
+import xyz.acrylicstyle.customenchantments.api.CustomEnchantments
+import xyz.acrylicstyle.customenchantments.util.UUIDMap
 
-abstract class CustomEnchantment(id: NamespacedKey) : Enchantment(id) {
+abstract class CustomEnchantment(val key: NamespacedKey) {
     companion object {
-        val activeEffects = PerPlayerInventory<CollectionList<Pair<CustomEnchantment, Int>>> { _ -> CollectionList() }
+        val activeEffects = UUIDMap<MutableList<Pair<CustomEnchantment, Int>>> { mutableListOf() }
 
         fun deactivateAllActiveEffects(player: Player) {
-            activeEffects.get(player.uniqueId).clone().forEach { pair ->
+            activeEffects[player.uniqueId].toList().forEach { pair ->
                 pair.first.deactivate(player, pair.second)
             }
-            activeEffects.get(player.uniqueId).clear()
+            activeEffects[player.uniqueId].clear()
         }
     }
+
+    abstract val name: String
+    abstract val itemTarget: EnchantmentTarget
+    open val isCursed: Boolean = false
+    open val isTreasure: Boolean = false
+    open val startLevel: Int = 1
+    abstract val maxLevel: Int
 
     open fun getMaximumAnvilableLevel(): Int = maxLevel + 1
     open fun canActivateEnchantment(type: ActivateType, item: ItemStack): Boolean {
         if (item.type == Material.ENCHANTED_BOOK) return false // enchanted books cannot activate enchantments
-        return if (type == ActivateType.ARMOR_CHANGED) {
-            itemTarget.name.startsWith("ARMOR") || itemTarget == EnchantmentTarget.WEARABLE
-        } else if (type == ActivateType.ITEM_HELD) {
-            !itemTarget.name.startsWith("ARMOR") && itemTarget != EnchantmentTarget.WEARABLE
-        } else {
-            Log.with("CustomEnchantments").warn("Unknown ActivateType: ${type.name}")
-            true // :thinking:
+        return when (type) {
+            ActivateType.ARMOR_CHANGED -> itemTarget.name.startsWith("ARMOR") || itemTarget == EnchantmentTarget.WEARABLE
+            ActivateType.ITEM_HELD -> !itemTarget.name.startsWith("ARMOR") && itemTarget != EnchantmentTarget.WEARABLE
         }
     }
 
     abstract fun getDescription(level: Int): List<String>
-    abstract override fun getName(): String // un-deprecate, remove 'override' modifier when it was removed on Enchantment class
-    abstract override fun isCursed(): Boolean // un-deprecate
+    abstract fun canEnchantItem(item: ItemStack): Boolean
+    abstract fun conflictsWith(other: Enchantment): Boolean
+
     protected open fun onActivate(player: Player, level: Int) {}
     protected open fun onDeactivate(player: Player, level: Int) {}
 
     fun activate(player: Player, level: Int) {
-        activeEffects.get(player.uniqueId).add(Pair(this, level))
+        activeEffects[player.uniqueId].add(Pair(this, level))
         onActivate(player, level)
     }
 
     fun deactivate(player: Player, level: Int) {
-        activeEffects.get(player.uniqueId).remove(Pair(this, level))
+        activeEffects[player.uniqueId].remove(Pair(this, level))
         onDeactivate(player, level)
     }
 

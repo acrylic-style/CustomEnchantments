@@ -1,9 +1,7 @@
 name: CustomEnchantments
-main: xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
-version: "1.0"
-api-version: "1.15"
-depend:
-  - TomeitoLib
+main: xyz.acrylicstyle.customenchantments.CustomEnchantmentsPlugin
+version: "1.0.0"
+api-version: "1.20"
 commands:
   customenchantments:
     aliases: ["ce", "customenchant"]

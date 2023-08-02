@@ -2,7 +2,8 @@ import java.net.URI
 
 plugins {
     java
-    kotlin("jvm") version "1.3.72"
+    kotlin("jvm") version "1.9.0"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "xyz.acrylicstyle"
@@ -10,43 +11,28 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    maven { url = URI("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
-    maven { url = URI("https://repo.acrylicstyle.xyz/") }
-    maven { url = URI("https://repo2.acrylicstyle.xyz/") }
+    maven { url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
+    maven { url = uri("https://repo.acrylicstyle.xyz/repository/maven-public/") }
+    maven { url = uri("https://repo.azisaba.net/repository/maven-public/") }
+    maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
+    mavenLocal()
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
-    compileOnly("xyz.acrylicstyle.grid:grid:1.16.3-R0.1-SNAPSHOT")
-    compileOnly("xyz.acrylicstyle:api:0.7.4a")
+    compileOnly("org.jetbrains:annotations:24.0.1")
+    compileOnly("org.spigotmc:spigot:1.20.1-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT")
+    implementation("net.azisaba:kotlin-nms-extension-v1_20_R1:1.0-SNAPSHOT")
 }
+
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 
 tasks {
-    compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
-}
-
-configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-}
-
-tasks {
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions.jvmTarget = "1.8"
-        kotlinOptions.freeCompilerArgs = listOf(
-            "-Xjsr305=strict"
-        )
-    }
-
-    withType<JavaCompile>().configureEach {
+    compileJava {
         options.encoding = "utf-8"
     }
 
-    withType<ProcessResources> {
+    processResources {
         filteringCharset = "UTF-8"
         from(sourceSets.main.get().resources.srcDirs) {
             include("**")
@@ -59,10 +45,11 @@ tasks {
             filter<org.apache.tools.ant.filters.ReplaceTokens>("tokens" to tokenReplacementMap)
         }
 
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         from(projectDir) { include("LICENSE") }
     }
 
-    withType<Jar> {
-        from(configurations.getByName("implementation").apply{ isCanBeResolved = true }.map { if (it.isDirectory) it else zipTree(it) })
+    shadowJar {
+        relocate("net.azisaba.kotlinnmsextension", "xyz.acrylicstyle.customenchantments.libs.net.azisaba.kotlinnmsextension")
     }
 }

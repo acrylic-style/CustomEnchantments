@@ -1,4 +1,4 @@
-package xyz.acrylicstyle.customEnchantments.api.utils
+package xyz.acrylicstyle.customenchantments.api.utils
 
 import org.bukkit.Material
 

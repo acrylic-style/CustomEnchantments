@@ -1,7 +1,4 @@
-package xyz.acrylicstyle.customEnchantments.api.enchantment
-
-import util.Collection
-import util.StringCollection
+package xyz.acrylicstyle.customenchantments.api.enchantment
 
 @Suppress("SpellCheckingInspection", "unused")
 enum class EnchantmentLevel(private val level: Int) {
@@ -61,12 +58,9 @@ enum class EnchantmentLevel(private val level: Int) {
     ;
 
     companion object {
-        private val byLevel = Collection<Int, EnchantmentLevel>()
-        private val byName = StringCollection<EnchantmentLevel>()
+        fun getByLevel(level: Int): EnchantmentLevel? = entries.find { enchantment -> enchantment.level == level }
 
-        fun getByLevel(level: Int): EnchantmentLevel? = values().find { enchantment -> enchantment.level == level }
-
-        fun getByName(name: String): EnchantmentLevel? = values().find { enchantment -> enchantment.name == name }
+        fun getByName(name: String): EnchantmentLevel? = entries.find { enchantment -> enchantment.name == name }
     }
 
     override fun toString() = name

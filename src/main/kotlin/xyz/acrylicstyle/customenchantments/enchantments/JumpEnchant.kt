@@ -1,4 +1,4 @@
-package xyz.acrylicstyle.customEnchantments.enchantments
+package xyz.acrylicstyle.customenchantments.enchantments
 
 import org.bukkit.ChatColor
 import org.bukkit.NamespacedKey
@@ -8,21 +8,19 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
-import xyz.acrylicstyle.customEnchantments.CustomEnchantmentsPlugin
-import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
+import xyz.acrylicstyle.customenchantments.CustomEnchantmentsPlugin
+import xyz.acrylicstyle.customenchantments.api.enchantment.CustomEnchantment
 
 class JumpEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.instance, "jump")) {
+    override val name = "跳躍力上昇"
+    override val itemTarget = EnchantmentTarget.ARMOR_FEET
+    override val maxLevel = 5
+
     override fun getDescription(level: Int): List<String> = listOf("跳躍力上昇が", "${ChatColor.GREEN}+$level${ChatColor.GRAY}上昇します。")
 
     override fun canEnchantItem(item: ItemStack): Boolean {
         return item.type.name.endsWith("BOOTS")
     }
-
-    override fun getItemTarget(): EnchantmentTarget = EnchantmentTarget.ARMOR_FEET
-
-    override fun getName(): String = "跳躍力上昇"
-
-    override fun isCursed(): Boolean = false
 
     override fun onActivate(player: Player, level: Int) {
         val amplifier = player.getPotionEffect(PotionEffectType.JUMP)?.amplifier ?: 0
@@ -32,12 +30,6 @@ class JumpEnchant : CustomEnchantment(NamespacedKey(CustomEnchantmentsPlugin.ins
     override fun onDeactivate(player: Player, level: Int) {
         player.removePotionEffect(PotionEffectType.JUMP)
     }
-
-    override fun isTreasure(): Boolean = false
-
-    override fun getMaxLevel(): Int = 5
-
-    override fun getStartLevel(): Int = 1
 
     override fun conflictsWith(other: Enchantment): Boolean = false
 }

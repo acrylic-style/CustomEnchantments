@@ -1,4 +1,4 @@
-package xyz.acrylicstyle.customEnchantments.api
+package xyz.acrylicstyle.customenchantments.api
 
 import org.bukkit.Bukkit
 import java.util.*

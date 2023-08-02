@@ -1,24 +1,17 @@
-package xyz.acrylicstyle.customEnchantments
+package xyz.acrylicstyle.customenchantments
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent
-import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.NamespacedKey
-import org.bukkit.Sound
+import org.bukkit.*
 import org.bukkit.block.Block
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockBreakEvent
-import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.inventory.PrepareAnvilEvent
-import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -26,42 +19,32 @@ import org.bukkit.inventory.AnvilInventory
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
-import util.CollectionList
-import util.CollectionSet
-import util.MathUtils
-import xyz.acrylicstyle.customEnchantments.EnchantmentManagerImpl.Companion.getNearbyBlocks
-import xyz.acrylicstyle.customEnchantments.api.CustomEnchantments
-import xyz.acrylicstyle.customEnchantments.api.EnchantmentManager
-import xyz.acrylicstyle.customEnchantments.api.enchantment.ActivateType
-import xyz.acrylicstyle.customEnchantments.api.enchantment.CustomEnchantment
-import xyz.acrylicstyle.customEnchantments.commands.CETabCompleter
-import xyz.acrylicstyle.customEnchantments.enchantments.*
-import xyz.acrylicstyle.tomeito_api.TomeitoAPI
-import xyz.acrylicstyle.tomeito_api.utils.Log
-import java.util.UUID
+import xyz.acrylicstyle.customenchantments.EnchantmentManagerImpl.Companion.getNearbyBlocks
+import xyz.acrylicstyle.customenchantments.api.CustomEnchantments
+import xyz.acrylicstyle.customenchantments.api.EnchantmentManager
+import xyz.acrylicstyle.customenchantments.api.enchantment.ActivateType
+import xyz.acrylicstyle.customenchantments.api.enchantment.CustomEnchantment
+import xyz.acrylicstyle.customenchantments.commands.RootCommand
+import xyz.acrylicstyle.customenchantments.enchantments.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.max
 
 class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
     companion object {
         lateinit var config: CustomEnchantmentConfig
-        lateinit var instance: CustomEnchantmentsPlugin
-        val recipes = CollectionList<NamespacedKey>()
+        val instance: CustomEnchantmentsPlugin
+            get() = getPlugin(CustomEnchantmentsPlugin::class.java)
+
+        val recipes = mutableListOf<NamespacedKey>()
     }
 
     private val manager = EnchantmentManagerImpl(this)
 
-    override fun onLoad() {
-        instance = this
-    }
-
     override fun onEnable() {
-        CustomEnchantmentsPlugin.config = CustomEnchantmentConfig()
-        Log.with("CustomEnchantments").info("Registering enchantments")
+        CustomEnchantmentsPlugin.config = CustomEnchantmentConfig(config)
+        logger.info("Registering enchantments")
         manager.registerEnchantment(JungleAxeEnchant())
-        manager.registerEnchantment(MukiEnchant())
-        manager.registerEnchantment(RenyokoEnchant())
-        manager.registerEnchantment(MeEnchant())
         manager.registerEnchantment(SpeedEnchant())
         manager.registerEnchantment(RegenerationEnchant())
         manager.registerEnchantment(AntiHungryEnchant())
@@ -69,18 +52,18 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         manager.registerEnchantment(GrowthEnchant())
         object: BukkitRunnable() {
             override fun run() {
-                CustomEnchantmentsPlugin.config.getConfigSectionValue("effects", false).keys.forEach { key ->
+                this@CustomEnchantmentsPlugin.config.getConfigurationSection("effects")?.getValues(true)?.keys?.forEach { key ->
                     if (key.contains(":")) {
-                        Log.warn("Skipping: Do not include ':' in the key: effects.$key")
+                        logger.warning("Skipping: Do not include ':' in the key: effects.$key")
                         return@forEach
                     }
                     val enchantment = manager.getById(key)
                     if (enchantment == null) {
-                        Log.warn("Skipping: Invalid enchantment key: effects.$key")
+                        logger.warning("Skipping: Invalid enchantment key: effects.$key")
                         return@forEach
                     }
                     if (recipes.find { namespacedKey -> namespacedKey == enchantment.key } != null) {
-                        Log.warn("Skipping: Duplicate enchantment key: effects.$key")
+                        logger.warning("Skipping: Duplicate enchantment key: effects.$key")
                         return@forEach
                     }
                     val recipe = ShapedRecipe(enchantment.key, enchantment.getEnchantmentBook(1, false))
@@ -93,14 +76,13 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                     try {
                         Bukkit.addRecipe(recipe)
                     } catch (e: IllegalStateException) {
-                        Log.warn("Ignoring duplicate recipe of effects.$key")
+                        logger.warning("Ignoring duplicate recipe of effects.$key")
                     }
                 }
             }
         }.runTaskLater(this, 1)
         Bukkit.getPluginManager().registerEvents(this, this)
-        TomeitoAPI.registerTabCompleter("customenchantments", CETabCompleter())
-        TomeitoAPI.getInstance().registerCommands(this.classLoader, "customenchantments", "xyz.acrylicstyle.customEnchantments.commands")
+        getCommand("customenchantments")?.setExecutor(RootCommand)
     }
 
     override fun onDisable() {
@@ -150,13 +132,13 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
             if (anvil.result != null) {
                 e.whoClicked
                     .inventory
-                    .addItem(anvil.result)
+                    .addItem(anvil.result!!)
                     .forEach { (_, item) -> e.whoClicked.world.dropItem(e.whoClicked.location, item) }
                 anvil.firstItem = null
                 if (anvil.secondItem!!.amount == 1) {
                     anvil.secondItem = null
                 } else {
-                    anvil.secondItem!!.amount = anvil.secondItem!!.amount - 1
+                    anvil.secondItem!!.amount -= 1
                 }
                 anvil.result = null
             }
@@ -245,52 +227,22 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
         }
     }
 
-    private val victim1 = UUID.fromString("7ffad749-e54d-4a13-908d-ed8807eb6d25")
-    private val victim2 = UUID.fromString("9c29137b-54a8-4e9a-ab22-f614cd23cc3b")
-    private val victim3 = UUID.fromString("1865ab8c-700b-478b-9b52-a8c58739df1a")
-
-    @EventHandler
-    fun onEntityDamageByEntity(e: EntityDamageByEntityEvent) {
-        if (e.entity is Player && e.damager is Player) {
-            val player = e.entity as Player
-            val damager = e.damager as Player
-            val item = damager.inventory.itemInMainHand
-            if (player.uniqueId == victim1) {
-                if (manager.hasEnchantment(item, manager.getEnchantment(MukiEnchant::class.java)!!)) {
-                    e.damage = e.damage * (10 * manager.getEnchantmentLevel(item, manager.getEnchantment(MukiEnchant::class.java)!!))
-                }
-            }
-            if (player.uniqueId == victim2) {
-                if (manager.hasEnchantment(item, manager.getEnchantment(RenyokoEnchant::class.java)!!)) {
-                    e.damage = e.damage * (10 * manager.getEnchantmentLevel(item, manager.getEnchantment(RenyokoEnchant::class.java)!!))
-                }
-            }
-            if (player.uniqueId == victim3) {
-                if (manager.hasEnchantment(damager.inventory.itemInMainHand, manager.getEnchantment(MeEnchant::class.java)!!)) {
-                    e.damage = e.damage * (1000 * manager.getEnchantmentLevel(item, manager.getEnchantment(MeEnchant::class.java)!!))
-                }
-            }
-        }
-    }
-
     @EventHandler
     fun onBlockBreak(e: BlockBreakEvent) {
         val item = e.player.inventory.itemInMainHand
         val type = e.block.type
-        if (e.block.location.world.name == "world") return
         if (e.expToDrop != -1
             && item.type.name.endsWith("AXE")
             && manager.hasEnchantment(item, manager.getEnchantment(JungleAxeEnchant::class.java)!!)
             && type.name.endsWith("_LOG")) {
             val blocks = 10 * manager.getEnchantmentLevel(item, manager.getEnchantment(JungleAxeEnchant::class.java)!!)
             val harvestedBlocks = AtomicInteger(1)
-            val period = MathUtils.max(10 - item.getEnchantmentLevel(Enchantment.DIG_SPEED), 1).toLong()
+            val period = max(10 - item.getEnchantmentLevel(Enchantment.DIG_SPEED), 1).toLong()
             val loc: AtomicReference<Location?> = AtomicReference()
-            val checkedLocation = CollectionSet<Location>()
-            val locationsToCheck = CollectionSet<Location>(e.block.location)
-            val checkedBlock = CollectionSet<Location>()
+            val checkedLocation = mutableSetOf<Location>()
+            val locationsToCheck = mutableSetOf(e.block.location)
+            val checkedBlock = mutableSetOf<Location>()
             object: BukkitRunnable() {
-                @Suppress("DEPRECATION")
                 override fun run() {
                     if (harvestedBlocks.get() > blocks) {
                         this.cancel()
@@ -299,7 +251,7 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                     val theBlock: Block
                     while (true) {
                         if (loc.get() == null) {
-                            loc.set(locationsToCheck.first())
+                            loc.set(locationsToCheck.firstOrNull())
                             if (loc.get() == null) {
                                 this.cancel()
                                 return
@@ -308,11 +260,9 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                             locationsToCheck.remove(locationsToCheck.first())
                         }
                         val nearbyBlock = loc.get()!!.getNearbyBlocks(1)
-                            .nonNull()
                             .filter { block -> !checkedBlock.contains(block.location) }
                             .filter { block -> !block.type.isAir }
-                            .filter { block -> block.type == type }
-                            .first()
+                            .firstOrNull { block -> block.type == type }
                         if (nearbyBlock == null) {
                             loc.set(null)
                             continue
@@ -329,17 +279,6 @@ class CustomEnchantmentsPlugin : JavaPlugin(), Listener, CustomEnchantments {
                     }
                 }
             }.runTaskTimer(this, period, period)
-        }
-    }
-
-    @EventHandler
-    fun onPlayerInteract(e: PlayerInteractEvent) {
-        if (e.action == Action.RIGHT_CLICK_AIR || e.action == Action.RIGHT_CLICK_BLOCK) {
-            if (e.player.uniqueId == victim3) {
-                if (manager.hasEnchantment(e.player.inventory.itemInMainHand, manager.getEnchantment(MeEnchant::class.java)!!)) {
-                    e.player.health = 0.0
-                }
-            }
         }
     }
 

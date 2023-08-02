@@ -1,4 +1,4 @@
-package xyz.acrylicstyle.customEnchantments.api.enchantment
+package xyz.acrylicstyle.customenchantments.api.enchantment
 
 enum class ActivateType {
     ARMOR_CHANGED,

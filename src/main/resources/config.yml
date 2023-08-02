@@ -1,0 +1,22 @@
+effects:
+  speed:
+    crafting:
+      slot0:
+        material: stone
+      slot1:
+        material: stone
+      slot2:
+        material: stone
+      slot3:
+        material: stone
+      slot4:
+        material: stone
+      slot5:
+        material: stone
+      slot6:
+        material: stone
+      slot7:
+        material: stone
+      slot8:
+        material: barrier
+min-health: 10 # lower cap on growth
